@@ -1,0 +1,8 @@
+# Sao chép file này thành "application-local.properties" (cùng thư mục) rồi sửa theo máy của bạn.
+# File application-local.properties đã nằm trong .gitignore nên không bị đẩy lên Git.
+
+spring.datasource.username=sa
+spring.datasource.password=MatKhauSqlServerCuaBan
+
+# Nếu SQL Server của bạn dùng instance có tên (ví dụ SQLEXPRESS) hoặc cổng khác 1433:
+# spring.datasource.url=jdbc:sqlserver://localhost\\SQLEXPRESS;databaseName=QuanLyXeMay;encrypt=true;trustServerCertificate=true

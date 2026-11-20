@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: trang(~{::title}, ~{::section})}">
+<head><title th:text="'Đăng ký tài khoản | ' + #{cuahang.ten}">Đăng ký tài khoản | Web Xe Máy</title></head>
+<body>
+<section>
+    <div class="xac-thuc-khung">
+        <div class="row g-0">
+            <div class="col-lg-5 d-none d-lg-block">
+                <figure class="anh-bia anh-bia-dang-ky">
+                    <img th:src="@{/images/bia-dang-ky.jpg}" width="1280" height="960"
+                         alt="Xe tay ga Honda SH màu xanh trưng bày trong showroom">
+                    <div class="anh-bia-noi-dung">
+                        <p class="anh-bia-tieu-de">Một tài khoản cho mọi lần mua xe</p>
+                        <ul class="anh-bia-cam-ket">
+                            <li><i class="bi bi-bag-check" aria-hidden="true"></i>Đặt xe và theo dõi đơn hàng trực tuyến</li>
+                            <li><i class="bi bi-receipt" aria-hidden="true"></i>Xem lại hóa đơn bất cứ lúc nào</li>
+                            <li><i class="bi bi-person-check" aria-hidden="true"></i>Lưu thông tin để lần sau đặt nhanh hơn</li>
+                        </ul>
+                    </div>
+                    <figcaption class="nguon-anh">Ảnh:
+                        <a href="https://commons.wikimedia.org/wiki/File:Honda_SH_2025.jpg" target="_blank" rel="noopener">AVMOTO</a>,
+                        <a href="https://creativecommons.org/licenses/by-sa/4.0" target="_blank" rel="noopener">CC BY-SA 4.0</a></figcaption>
+                </figure>
+            </div>
+
+            <div class="col-lg-7">
+                <div class="xac-thuc-form xac-thuc-form-rong">
+                    <h1>Đăng ký tài khoản</h1>
+                    <p class="dau-trang-mo-ta">Các ô có dấu <span class="text-danger">*</span> là bắt buộc.</p>
+
+                    <!-- novalidate: tắt kiểm tra của trình duyệt để lỗi do máy chủ kiểm tra (@Valid) hiện cạnh từng ô -->
+                    <form th:action="@{/dang-ky}" th:object="${form}" method="post" novalidate>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="tenDangNhap" class="form-label">Tên đăng nhập <span class="text-danger">*</span></label>
+                                <input type="text" th:field="*{tenDangNhap}" class="form-control" th:errorclass="is-invalid"
+                                       maxlength="30" autocomplete="username">
+                                <div class="invalid-feedback" th:errors="*{tenDangNhap}"></div>
+                                <div class="form-text" th:unless="${#fields.hasErrors('tenDangNhap')}">4-30 ký tự: chữ không dấu, số, dấu chấm, gạch dưới.</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="hoTen" class="form-label">Họ và tên <span class="text-danger">*</span></label>
+                                <input type="text" th:field="*{hoTen}" class="form-control" th:errorclass="is-invalid"
+                                       maxlength="100" autocomplete="name">
+                                <div class="invalid-feedback" th:errors="*{hoTen}"></div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="matKhau" class="form-label">Mật khẩu <span class="text-danger">*</span></label>
+                                <div class="input-group has-validation">
+                                    <input type="password" th:field="*{matKhau}" class="form-control" th:errorclass="is-invalid"
+                                           maxlength="50" autocomplete="new-password">
+                                    <button type="button" class="btn btn-outline-secondary" data-hien-mat-khau="matKhau"
+                                            title="Hiện mật khẩu" aria-label="Hiện mật khẩu"><i class="bi bi-eye" aria-hidden="true"></i></button>
+                                    <div class="invalid-feedback" th:errors="*{matKhau}"></div>
+                                </div>
+                                <div class="form-text" th:unless="${#fields.hasErrors('matKhau')}">Từ 6 ký tự, không có khoảng trắng và chữ có dấu.</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="nhapLaiMatKhau" class="form-label">Nhập lại mật khẩu <span class="text-danger">*</span></label>
+                                <input type="password" th:field="*{nhapLaiMatKhau}" class="form-control"
+                                       th:classappend="${#fields.hasErrors('matKhauKhop')} ? 'is-invalid'"
+                                       maxlength="50" autocomplete="new-password">
+                                <div class="invalid-feedback" th:errors="*{matKhauKhop}"></div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="email" class="form-label">Email <span class="text-danger">*</span></label>
+                                <input type="email" th:field="*{email}" class="form-control" th:errorclass="is-invalid"
+                                       maxlength="100" autocomplete="email">
+                                <div class="invalid-feedback" th:errors="*{email}"></div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="soDienThoai" class="form-label">Số điện thoại</label>
+                                <input type="tel" th:field="*{soDienThoai}" class="form-control" th:errorclass="is-invalid"
+                                       maxlength="10" autocomplete="tel">
+                                <div class="invalid-feedback" th:errors="*{soDienThoai}"></div>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100 mt-4">Tạo tài khoản</button>
+                        <p class="mt-4 mb-0 chu-phu">Đã có tài khoản? <a th:href="@{/dang-nhap}" class="fw-semibold">Đăng nhập</a></p>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+</body>
+</html>

@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<body>
+<!--/*
+    MENU BÊN TRÁI của khu vực "Tài khoản của tôi":
+      <aside th:replace="~{fragments/tai-khoan :: menu}"></aside>
+    Thành viên phụ trách đặt hàng: bỏ chú thích mục "Đơn hàng của tôi" khi trang /don-hang đã làm xong.
+*/-->
+<aside th:fragment="menu" class="menu-tai-khoan" aria-label="Tài khoản của tôi"
+       th:with="hoTen=${#authentication.principal.hoTen}">
+    <div class="menu-tai-khoan-dau">
+        <span class="anh-dai-dien anh-dai-dien-lon" aria-hidden="true"
+              th:text="${#strings.toUpperCase(#strings.substring(hoTen, hoTen.lastIndexOf(' ') + 1, hoTen.lastIndexOf(' ') + 2))}">A</span>
+        <span>
+            <span class="d-block fw-semibold text-body-emphasis" th:text="${hoTen}">Họ tên</span>
+            <span class="d-block chu-phu chu-nho" sec:authentication="principal.tenVaiTro">Vai trò</span>
+        </span>
+    </div>
+    <nav class="nav flex-column">
+        <a class="nav-link" th:href="@{/tai-khoan}" th:classappend="${@duongDan.laTrang('/tai-khoan')} ? 'active'">
+            <i class="bi bi-person" aria-hidden="true"></i>Thông tin cá nhân</a>
+        <a class="nav-link" th:href="@{/tai-khoan/doi-mat-khau}" th:classappend="${@duongDan.laTrang('/tai-khoan/doi-mat-khau')} ? 'active'">
+            <i class="bi bi-key" aria-hidden="true"></i>Đổi mật khẩu</a>
+        <!--/*
+        <a class="nav-link" th:href="@{/don-hang}" th:classappend="${@duongDan.dangO('/don-hang')} ? 'active'">
+            <i class="bi bi-receipt" aria-hidden="true"></i>Đơn hàng của tôi</a>
+        */-->
+    </nav>
+</aside>
+</body>
+</html>

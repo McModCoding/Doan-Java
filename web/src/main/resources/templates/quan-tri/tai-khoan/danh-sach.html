@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: trang(~{::title}, ~{::section})}">
+<head><title th:text="'Quản lý tài khoản | ' + #{cuahang.ten}">Quản lý tài khoản | Web Xe Máy</title></head>
+<body>
+<section>
+    <div class="dau-trang mb-3">
+        <div>
+            <h1>Quản lý tài khoản</h1>
+            <p class="dau-trang-mo-ta" th:text="|${trang.totalElements} tài khoản phù hợp điều kiện lọc|">25 tài khoản</p>
+        </div>
+        <a class="btn btn-primary" th:href="@{/quan-tri/tai-khoan/them}"><i class="bi bi-plus-lg" aria-hidden="true"></i>Thêm tài khoản</a>
+    </div>
+    <div th:replace="~{fragments/quan-tri :: menu}"></div>
+
+    <!-- Tìm kiếm và lọc: gửi GET để địa chỉ trang giữ nguyên điều kiện khi chuyển trang / sắp xếp -->
+    <form class="row g-2 mb-4" method="get" th:action="@{/quan-tri/tai-khoan}" role="search">
+        <div class="col-md-6 col-lg-5">
+            <label for="tuKhoa" class="visually-hidden">Từ khóa</label>
+            <input type="search" id="tuKhoa" name="tuKhoa" th:value="${tuKhoa}" class="form-control"
+                   placeholder="Tên đăng nhập, họ tên hoặc email" maxlength="100">
+        </div>
+        <div class="col-sm-6 col-md-3">
+            <label for="vaiTroId" class="visually-hidden">Vai trò</label>
+            <select id="vaiTroId" name="vaiTroId" class="form-select">
+                <option value="">Tất cả vai trò</option>
+                <option th:each="vt : ${danhSachVaiTro}" th:value="${vt.id}" th:text="${vt.ten}"
+                        th:selected="${vt.id == vaiTroId}">Vai trò</option>
+            </select>
+        </div>
+        <div class="col-sm-6 col-md-3 col-lg-4 d-flex gap-2">
+            <button type="submit" class="btn btn-outline-secondary"><i class="bi bi-search" aria-hidden="true"></i>Tìm</button>
+            <a class="btn btn-outline-secondary" th:href="@{/quan-tri/tai-khoan}"
+               th:if="${!#strings.isEmpty(tuKhoa) or vaiTroId != null}">Bỏ lọc</a>
+        </div>
+    </form>
+
+    <div class="bang-khung">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle bang-co-thao-tac">
+                <thead>
+                <tr>
+                    <th class="d-none d-sm-table-cell"><a th:replace="~{fragments/sap-xep :: cot('Mã', 'id')}"></a></th>
+                    <th><a th:replace="~{fragments/sap-xep :: cot('Tài khoản', 'tenDangNhap')}"></a></th>
+                    <th class="d-none d-md-table-cell"><a th:replace="~{fragments/sap-xep :: cot('Họ tên', 'hoTen')}"></a></th>
+                    <th class="d-none d-xl-table-cell"><a th:replace="~{fragments/sap-xep :: cot('Email', 'email')}"></a></th>
+                    <th class="d-none d-sm-table-cell"><a th:replace="~{fragments/sap-xep :: cot('Vai trò', 'vaiTro.ten')}"></a></th>
+                    <th><a th:replace="~{fragments/sap-xep :: cot('Trạng thái', 'kichHoat')}"></a></th>
+                    <th class="d-none d-lg-table-cell"><a th:replace="~{fragments/sap-xep :: cot('Ngày tạo', 'ngayTao')}"></a></th>
+                    <th class="text-end"><span class="visually-hidden">Thao tác</span></th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:if="${trang.empty}">
+                    <td colspan="8" class="text-center chu-phu py-5">Không tìm thấy tài khoản nào phù hợp.</td>
+                </tr>
+                <tr th:each="tk : ${trang.content}"
+                    th:with="laToi=${tk.tenDangNhap == #authentication.name},
+                             tamKhoa=${@boDemDangNhapSai.dangBiKhoa(tk.tenDangNhap)}">
+                    <td class="d-none d-sm-table-cell so chu-phu" th:text="${tk.id}">1</td>
+                    <td>
+                        <span class="o-chinh" th:text="${tk.tenDangNhap}">admin</span>
+                        <span th:if="${laToi}" class="nhan nhan-vien ms-1">bạn</span>
+                        <!-- Màn hình điện thoại: hiện vai trò ngay dưới tên đăng nhập thay cho cột riêng -->
+                        <div class="d-sm-none chu-phu chu-nho" th:text="${tk.vaiTro.ten}">Vai trò</div>
+                        <div class="d-none d-sm-block d-md-none chu-phu chu-nho" th:text="${tk.hoTen}">Họ tên</div>
+                    </td>
+                    <td class="d-none d-md-table-cell" th:text="${tk.hoTen}">Họ tên</td>
+                    <td class="d-none d-xl-table-cell chu-phu" th:text="${tk.email}">email</td>
+                    <td class="d-none d-sm-table-cell" th:text="${tk.vaiTro.ten}">Vai trò</td>
+                    <td>
+                        <span th:if="${!tk.kichHoat}" class="nhan nhan-dam"><i class="bi bi-lock-fill" aria-hidden="true"></i>Đã khóa</span>
+                        <span th:if="${tk.kichHoat and tamKhoa}" class="nhan nhan-canh-bao"
+                              title="Nhập sai mật khẩu quá nhiều lần">Tạm khóa</span>
+                        <span th:if="${tk.kichHoat and !tamKhoa}" class="nhan nhan-thanh-cong">Hoạt động</span>
+                    </td>
+                    <td class="d-none d-lg-table-cell so chu-phu text-nowrap"
+                        th:text="${#temporals.format(tk.ngayTao, 'dd/MM/yyyy')}">01/01/2026</td>
+                    <td class="text-end">
+                        <div class="thao-tac">
+                            <a class="btn btn-icon" th:href="@{/quan-tri/tai-khoan/{id}/sua(id=${tk.id})}"
+                               title="Sửa" aria-label="Sửa"><i class="bi bi-pencil" aria-hidden="true"></i></a>
+
+                            <form th:if="${tk.kichHoat and !tamKhoa and !laToi}" method="post"
+                                  th:action="@{/quan-tri/tai-khoan/{id}/khoa(id=${tk.id})}"
+                                  th:data-xac-nhan="|Khóa tài khoản ${tk.tenDangNhap}? Người dùng này sẽ không đăng nhập được nữa.|"
+                                  data-nut-xac-nhan="Khóa tài khoản" data-kieu-nut="btn-primary">
+                                <button type="submit" class="btn btn-icon" title="Khóa" aria-label="Khóa">
+                                    <i class="bi bi-lock" aria-hidden="true"></i></button>
+                            </form>
+                            <form th:if="${!tk.kichHoat or tamKhoa}" method="post"
+                                  th:action="@{/quan-tri/tai-khoan/{id}/mo-khoa(id=${tk.id})}">
+                                <button type="submit" class="btn btn-icon" title="Mở khóa" aria-label="Mở khóa">
+                                    <i class="bi bi-unlock" aria-hidden="true"></i></button>
+                            </form>
+                            <form th:unless="${laToi}" method="post"
+                                  th:action="@{/quan-tri/tai-khoan/{id}/xoa(id=${tk.id})}"
+                                  th:data-xac-nhan="|Xóa tài khoản ${tk.tenDangNhap}? Thao tác này không thể hoàn tác.|"
+                                  data-nut-xac-nhan="Xóa tài khoản">
+                                <button type="submit" class="btn btn-icon nguy-hiem" title="Xóa" aria-label="Xóa">
+                                    <i class="bi bi-trash3" aria-hidden="true"></i></button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div th:replace="~{fragments/phan-trang :: phanTrang(${trang})}"></div>
+</section>
+</body>
+</html>

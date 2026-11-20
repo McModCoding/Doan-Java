@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: trang(~{::title}, ~{::section})}">
+<head><title th:text="'Lịch sử đăng nhập | ' + #{cuahang.ten}">Lịch sử đăng nhập | Web Xe Máy</title></head>
+<body>
+<section>
+    <div class="dau-trang mb-3">
+        <div>
+            <h1>Lịch sử đăng nhập</h1>
+            <p class="dau-trang-mo-ta">Mọi lần đăng nhập trên web và từ client quản lý kho, ghi bởi tác vụ nền.
+                Dữ liệu cũ hơn 90 ngày được tự xóa lúc 02:00 hằng ngày.</p>
+        </div>
+    </div>
+    <div th:replace="~{fragments/quan-tri :: menu}"></div>
+
+    <form class="row g-2 mb-4" method="get" th:action="@{/quan-tri/lich-su-dang-nhap}" role="search">
+        <div class="col-md-6 col-lg-5">
+            <label for="tuKhoa" class="visually-hidden">Tên đăng nhập</label>
+            <input type="search" id="tuKhoa" name="tuKhoa" th:value="${tuKhoa}" class="form-control"
+                   placeholder="Lọc theo tên đăng nhập" maxlength="100">
+        </div>
+        <div class="col-md-6 col-lg-4 d-flex gap-2">
+            <button type="submit" class="btn btn-outline-secondary"><i class="bi bi-search" aria-hidden="true"></i>Tìm</button>
+            <a class="btn btn-outline-secondary" th:href="@{/quan-tri/lich-su-dang-nhap}" th:if="${!#strings.isEmpty(tuKhoa)}">Bỏ lọc</a>
+        </div>
+    </form>
+
+    <div class="bang-khung">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead>
+                <tr>
+                    <th><a th:replace="~{fragments/sap-xep :: cot('Thời gian', 'thoiGian')}"></a></th>
+                    <th><a th:replace="~{fragments/sap-xep :: cot('Tài khoản', 'tenDangNhap')}"></a></th>
+                    <th class="d-none d-sm-table-cell"><a th:replace="~{fragments/sap-xep :: cot('Kênh', 'kenh')}"></a></th>
+                    <th class="d-none d-md-table-cell"><a th:replace="~{fragments/sap-xep :: cot('Địa chỉ IP', 'diaChiIp')}"></a></th>
+                    <th><a th:replace="~{fragments/sap-xep :: cot('Kết quả', 'thanhCong')}"></a></th>
+                    <th class="d-none d-lg-table-cell">Ghi chú</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:if="${trang.empty}">
+                    <td colspan="6" class="text-center chu-phu py-5">Chưa có dữ liệu.</td>
+                </tr>
+                <tr th:each="ls : ${trang.content}">
+                    <td class="so text-nowrap" th:text="${#temporals.format(ls.thoiGian, 'dd/MM/yyyy HH:mm')}">--</td>
+                    <td>
+                        <span class="o-chinh" th:text="${ls.tenDangNhap}">admin</span>
+                        <div class="d-sm-none chu-phu chu-nho" th:text="${ls.kenh == 'SOCKET'} ? 'Client kho' : 'Web'">Web</div>
+                    </td>
+                    <td class="d-none d-sm-table-cell">
+                        <span class="nhan" th:classappend="${ls.kenh == 'SOCKET'} ? 'nhan-vien'"
+                              th:text="${ls.kenh == 'SOCKET'} ? 'Client kho' : 'Web'">Web</span>
+                    </td>
+                    <td class="d-none d-md-table-cell so chu-phu" th:text="${ls.diaChiIp}">127.0.0.1</td>
+                    <td>
+                        <span th:if="${ls.thanhCong}" class="nhan nhan-thanh-cong">Thành công</span>
+                        <span th:unless="${ls.thanhCong}" class="nhan nhan-loi">Thất bại</span>
+                    </td>
+                    <td class="d-none d-lg-table-cell chu-phu" th:text="${ls.ghiChu}"></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div th:replace="~{fragments/phan-trang :: phanTrang(${trang})}"></div>
+</section>
+</body>
+</html>

@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<!--/*
+    TRANG CHỦ TẠM THỜI - để có nơi đứng sau khi đăng nhập và thử phần menu theo vai trò.
+    Thành viên phụ trách giao diện thay nội dung thẻ <section> bằng trang chủ thật theo quy chuẩn giao diện
+    (ảnh bìa, xe nổi bật dạng thẻ .the-xe, hãng xe...), giữ nguyên dòng th:replace bên dưới.
+*/-->
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:replace="~{fragments/layout :: trang(~{::title}, ~{::section})}">
+<head><title th:text="#{cuahang.ten} + ' | Đại lý xe máy chính hãng'">Web Xe Máy | Đại lý xe máy chính hãng</title></head>
+<body>
+<section>
+    <div class="row g-4 align-items-center">
+        <div class="col-lg-7">
+            <h1 th:text="#{cuahang.ten}">Web Xe Máy</h1>
+            <p class="dau-trang-mo-ta mb-4" th:text="#{cuahang.mo-ta}">Mô tả cửa hàng</p>
+
+            <div sec:authorize="isAnonymous()" class="d-flex flex-wrap gap-2">
+                <a class="btn btn-primary" th:href="@{/dang-nhap}">Đăng nhập</a>
+                <a class="btn btn-outline-secondary" th:href="@{/dang-ky}">Tạo tài khoản</a>
+            </div>
+
+            <div sec:authorize="isAuthenticated()">
+                <p class="mb-3">Xin chào <strong sec:authentication="principal.hoTen">Họ tên</strong>
+                    (<span sec:authentication="principal.tenVaiTro">vai trò</span>).</p>
+                <div class="d-flex flex-wrap gap-2">
+                    <a sec:authorize="hasAnyRole('ADMIN', 'NHANVIEN')" class="btn btn-primary" th:href="@{/quan-tri}">Vào trang quản trị</a>
+                    <a class="btn btn-outline-secondary" th:href="@{/tai-khoan}">Tài khoản của tôi</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-5">
+            <div class="card">
+                <div class="card-body">
+                    <p class="fw-semibold text-body-emphasis mb-2">Trang chủ đang được xây dựng</p>
+                    <p class="chu-phu mb-0">Danh sách xe, chi tiết xe và giỏ hàng sẽ xuất hiện ở đây khi các phần của nhóm được ghép vào.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+</body>
+</html>

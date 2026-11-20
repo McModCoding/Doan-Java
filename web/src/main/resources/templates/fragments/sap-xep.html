@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<body>
+<!--/*
+    TIÊU ĐỀ CỘT BẤM ĐƯỢC ĐỂ SẮP XẾP. Bấm lần đầu: tăng dần, bấm lại: giảm dần. Mũi tên chỉ cột đang sắp xếp.
+    Cần biến "trang" (Page<...>) trong model và tên cột phải nằm trong danh sách cột cho phép ở Controller.
+    Lưu ý Thymeleaf 3.1: th:href không được gọi bean (@...) trực tiếp, nên đường dẫn được tính trước bằng th:with.
+      <th><a th:replace="~{fragments/sap-xep :: cot('Họ tên', 'hoTen')}"></a></th>
+*/-->
+<a th:fragment="cot(tieuDe, truong)"
+   class="link-body-emphasis text-decoration-none text-nowrap"
+   th:with="chinh=${trang.sort.isSorted() ? trang.sort.toList().get(0) : null},
+            dangSapXep=${chinh != null and chinh.property == truong},
+            tangDan=${dangSapXep and chinh.ascending},
+            lienKet=${@duongDan.thay('sort', truong + (tangDan ? ',desc' : ',asc'), 'page', 1)}"
+   th:href="${lienKet}"
+   th:title="|Sắp xếp theo ${tieuDe}|">
+    <span th:text="${tieuDe}">Cột</span>
+    <i th:if="${dangSapXep}" th:class="${tangDan} ? 'bi bi-caret-up-fill' : 'bi bi-caret-down-fill'"></i>
+</a>
+</body>
+</html>

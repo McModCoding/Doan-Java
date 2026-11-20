@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: trang(~{::title}, ~{::section})}">
+<head><title th:text="'Đổi mật khẩu | ' + #{cuahang.ten}">Đổi mật khẩu | Web Xe Máy</title></head>
+<body>
+<section>
+    <div class="dau-trang">
+        <div>
+            <h1>Tài khoản của tôi</h1>
+            <p class="dau-trang-mo-ta">Đổi mật khẩu định kỳ và không dùng lại mật khẩu của tài khoản khác.</p>
+        </div>
+    </div>
+
+    <div class="row g-4 g-lg-5">
+        <div class="col-lg-3">
+            <aside th:replace="~{fragments/tai-khoan :: menu}"></aside>
+        </div>
+
+        <div class="col-lg-9 col-xl-8">
+            <div class="card">
+                <div class="card-header"><h2>Đổi mật khẩu</h2></div>
+                <div class="card-body">
+                    <form th:action="@{/tai-khoan/doi-mat-khau}" th:object="${form}" method="post" novalidate class="form-hep">
+                        <div class="mb-3">
+                            <label for="matKhauHienTai" class="form-label">Mật khẩu hiện tại</label>
+                            <input type="password" th:field="*{matKhauHienTai}" class="form-control" th:errorclass="is-invalid"
+                                   maxlength="50" autocomplete="current-password">
+                            <div class="invalid-feedback" th:errors="*{matKhauHienTai}"></div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="matKhauMoi" class="form-label">Mật khẩu mới</label>
+                            <input type="password" th:field="*{matKhauMoi}" class="form-control" th:errorclass="is-invalid"
+                                   maxlength="50" autocomplete="new-password">
+                            <div class="invalid-feedback" th:errors="*{matKhauMoi}"></div>
+                            <div class="form-text" th:unless="${#fields.hasErrors('matKhauMoi')}">Từ 6 ký tự, không có khoảng trắng và chữ có dấu.</div>
+                        </div>
+                        <div class="mb-4">
+                            <label for="nhapLaiMatKhauMoi" class="form-label">Nhập lại mật khẩu mới</label>
+                            <input type="password" th:field="*{nhapLaiMatKhauMoi}" class="form-control"
+                                   th:classappend="${#fields.hasErrors('matKhauKhop')} ? 'is-invalid'"
+                                   maxlength="50" autocomplete="new-password">
+                            <div class="invalid-feedback" th:errors="*{matKhauKhop}"></div>
+                        </div>
+                        <div class="d-flex flex-wrap gap-2">
+                            <button type="submit" class="btn btn-primary">Đổi mật khẩu</button>
+                            <a class="btn btn-outline-secondary" th:href="@{/tai-khoan}">Hủy</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+</body>
+</html>

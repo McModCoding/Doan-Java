@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>3.5.16</version>
+        <relativePath/>
+    </parent>
+
+    <groupId>com.xemay</groupId>
+    <artifactId>xemay-web</artifactId>
+    <version>1.0.0</version>
+    <name>xemay-web</name>
+    <description>Ứng dụng Web bán xe máy (Spring Boot + Thymeleaf + SQL Server)</description>
+
+    <properties>
+        <!-- Biên dịch ở mức Java 17: chạy được trên JDK 17, 21 và mới hơn -->
+        <java.version>17</java.version>
+    </properties>
+
+    <dependencies>
+        <!-- Web MVC + Tomcat nhúng -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+
+        <!-- Giao diện Thymeleaf -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-thymeleaf</artifactId>
+        </dependency>
+
+        <!-- Đăng nhập, phân quyền -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+        <!-- Thẻ sec:authorize trong Thymeleaf (ẩn/hiện menu theo vai trò) -->
+        <dependency>
+            <groupId>org.thymeleaf.extras</groupId>
+            <artifactId>thymeleaf-extras-springsecurity6</artifactId>
+        </dependency>
+
+        <!-- Spring Data JPA + kiểm tra dữ liệu nhập (@Valid) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-validation</artifactId>
+        </dependency>
+
+        <!-- Driver SQL Server (cơ sở dữ liệu chính của đồ án) -->
+        <dependency>
+            <groupId>com.microsoft.sqlserver</groupId>
+            <artifactId>mssql-jdbc</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        <!-- H2 chạy trong bộ nhớ: dùng cho kiểm thử tự động và profile "h2" (chạy thử khi chưa cài SQL Server) -->
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+
+        <!-- Bootstrap đóng gói sẵn trong ứng dụng: demo không cần Internet -->
+        <dependency>
+            <groupId>org.webjars</groupId>
+            <artifactId>bootstrap</artifactId>
+            <version>5.3.8</version>
+        </dependency>
+        <dependency>
+            <groupId>org.webjars.npm</groupId>
+            <artifactId>bootstrap-icons</artifactId>
+            <version>1.13.1</version>
+        </dependency>
+        <!-- Cho phép viết /webjars/bootstrap/css/... mà không cần ghi số phiên bản -->
+        <dependency>
+            <groupId>org.webjars</groupId>
+            <artifactId>webjars-locator-lite</artifactId>
+        </dependency>
+
+        <!-- Kiểm thử -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+</project>

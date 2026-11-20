@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: trang(~{::title}, ~{::section})}">
+<head><title th:text="'Đăng nhập | ' + #{cuahang.ten}">Đăng nhập | Web Xe Máy</title></head>
+<body>
+<section>
+    <div class="xac-thuc-khung">
+        <div class="row g-0">
+            <div class="col-lg-7 d-none d-lg-block">
+                <figure class="anh-bia anh-bia-dang-nhap">
+                    <img th:src="@{/images/bia-dang-nhap.jpg}" width="1280" height="853"
+                         alt="Xe tay ga Honda SH 350 màu đỏ trưng bày trong showroom">
+                    <div class="anh-bia-noi-dung">
+                        <p class="anh-bia-tieu-de">Xe chính hãng, giá niêm yết rõ ràng</p>
+                        <ul class="anh-bia-cam-ket">
+                            <li><i class="bi bi-shield-check" aria-hidden="true"></i>Bảo hành chính hãng đến 3 năm</li>
+                            <li><i class="bi bi-credit-card" aria-hidden="true"></i>Hỗ trợ trả góp qua ngân hàng</li>
+                            <li><i class="bi bi-file-earmark-check" aria-hidden="true"></i>Làm giấy tờ, biển số trọn gói</li>
+                        </ul>
+                    </div>
+                    <figcaption class="nguon-anh">Ảnh:
+                        <a href="https://commons.wikimedia.org/wiki/File:Honda_SH_350_2026.jpg" target="_blank" rel="noopener">MotorideSA</a>,
+                        <a href="https://creativecommons.org/licenses/by-sa/4.0" target="_blank" rel="noopener">CC BY-SA 4.0</a></figcaption>
+                </figure>
+            </div>
+
+            <div class="col-lg-5 d-flex align-items-center">
+                <div class="xac-thuc-form w-100">
+                    <h1>Đăng nhập</h1>
+                    <p class="dau-trang-mo-ta">Chào mừng bạn quay lại <span th:text="#{cuahang.ten}">Web Xe Máy</span>.</p>
+
+                    <div th:if="${thongBaoLoi}" class="alert alert-danger" role="alert">
+                        <i class="bi bi-exclamation-circle" aria-hidden="true"></i><span th:text="${thongBaoLoi}">Lỗi</span>
+                    </div>
+                    <div th:if="${thongBaoThanhCong}" class="alert alert-success" role="status">
+                        <i class="bi bi-check-circle" aria-hidden="true"></i><span th:text="${thongBaoThanhCong}">Thành công</span>
+                    </div>
+
+                    <!-- Form gửi POST /dang-nhap: Spring Security tự kiểm tra (xem SecurityConfig) -->
+                    <form th:action="@{/dang-nhap}" method="post">
+                        <div class="mb-3">
+                            <label for="tenDangNhap" class="form-label">Tên đăng nhập</label>
+                            <input type="text" id="tenDangNhap" name="tenDangNhap" class="form-control"
+                                   th:value="${tenVuaNhap}" maxlength="30" autocomplete="username" required autofocus>
+                        </div>
+                        <div class="mb-4">
+                            <label for="matKhau" class="form-label">Mật khẩu</label>
+                            <div class="input-group">
+                                <input type="password" id="matKhau" name="matKhau" class="form-control"
+                                       maxlength="50" autocomplete="current-password" required>
+                                <button type="button" class="btn btn-outline-secondary" data-hien-mat-khau="matKhau"
+                                        title="Hiện mật khẩu" aria-label="Hiện mật khẩu">
+                                    <i class="bi bi-eye" aria-hidden="true"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Đăng nhập</button>
+                    </form>
+
+                    <p class="mt-4 mb-0 chu-phu">Chưa có tài khoản?
+                        <a th:href="@{/dang-ky}" class="fw-semibold">Đăng ký</a> để đặt xe và theo dõi đơn hàng.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+</body>
+</html>

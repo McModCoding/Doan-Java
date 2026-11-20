@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<body>
+<!--/*
+    HỘP XÁC NHẬN dùng chung (Bootstrap modal). Muốn hỏi lại trước khi gửi một form, chỉ cần thêm thuộc tính:
+      <form method="post" th:action="@{/quan-tri/xe-may/{id}/xoa(id=${xe.id})}"
+            th:data-xac-nhan="|Xóa xe ${xe.tenXe}? Thao tác này không thể hoàn tác.|"
+            data-nut-xac-nhan="Xóa">
+    Phần xử lý nằm trong static/js/app.js.
+*/-->
+<div th:fragment="hopXacNhan" class="modal fade" id="hopXacNhan" tabindex="-1" aria-labelledby="hopXacNhanTieuDe" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title fs-5" id="hopXacNhanTieuDe">Xác nhận thao tác</h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+            </div>
+            <div class="modal-body" id="hopXacNhanNoiDung">Bạn có chắc chắn muốn thực hiện thao tác này?</div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-danger" id="hopXacNhanDongY">Đồng ý</button>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<body>
+<!--/*
+    HEADER: thanh thông tin (hotline, địa chỉ, giờ mở cửa) + menu chính.
+    Tên cửa hàng, hotline, địa chỉ lấy từ messages.properties (khóa cuahang.*).
+
+    Menu được ẩn/hiện THEO VAI TRÒ bằng sec:authorize:
+      - Ai cũng thấy:             Trang chủ, Liên hệ (và các trang công khai như danh sách xe)
+      - Khách hàng đã đăng nhập:  Giỏ hàng, Đơn hàng của tôi
+      - Quản trị viên, nhân viên: menu Quản trị
+      - Chỉ quản trị viên:        Quản lý tài khoản, Lịch sử đăng nhập
+    Ẩn menu chỉ để giao diện gọn gàng; việc CHẶN truy cập thật sự nằm trong SecurityConfig.
+*/-->
+<header th:fragment="header">
+    <div class="thanh-thong-tin d-none d-md-block">
+        <div class="container d-flex align-items-center justify-content-between gap-3">
+            <div class="d-flex align-items-center gap-4">
+                <span><i class="bi bi-telephone" aria-hidden="true"></i>Hotline
+                    <a th:href="|tel:#{cuahang.hotline-so}|" th:text="#{cuahang.hotline}">1800 0000</a></span>
+                <span class="d-none d-lg-inline"><i class="bi bi-geo-alt" aria-hidden="true"></i><span th:text="#{cuahang.dia-chi}">Địa chỉ</span></span>
+            </div>
+            <span><i class="bi bi-clock" aria-hidden="true"></i><span th:text="#{cuahang.gio-mo-cua}">Giờ mở cửa</span></span>
+        </div>
+    </div>
+
+    <nav class="navbar navbar-expand-lg thanh-menu" aria-label="Menu chính">
+        <div class="container">
+            <a class="navbar-brand logo" th:href="@{/}">
+                <span class="logo-dau" aria-hidden="true"></span><span th:text="#{cuahang.ten}">Web Xe Máy</span>
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#menuChinh"
+                    aria-controls="menuChinh" aria-expanded="false" aria-label="Mở menu">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="menuChinh">
+                <ul class="navbar-nav me-auto ms-lg-5">
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/}" th:classappend="${@duongDan.laTrang('/')} ? 'active'">Trang chủ</a>
+                    </li>
+                    <!--/* Thành viên phụ trách giao diện: bỏ chú thích khi trang /xe-may đã làm xong
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/xe-may}" th:classappend="${@duongDan.dangO('/xe-may')} ? 'active'">Xe máy</a>
+                    </li>
+                    */-->
+                    <!--/* Thành viên phụ trách giỏ hàng, đặt hàng: bỏ chú thích khi đã làm xong
+                    <li class="nav-item" sec:authorize="hasRole('KHACHHANG')">
+                        <a class="nav-link" th:href="@{/gio-hang}" th:classappend="${@duongDan.dangO('/gio-hang')} ? 'active'">Giỏ hàng</a>
+                    </li>
+                    <li class="nav-item" sec:authorize="hasRole('KHACHHANG')">
+                        <a class="nav-link" th:href="@{/don-hang}" th:classappend="${@duongDan.dangO('/don-hang')} ? 'active'">Đơn hàng của tôi</a>
+                    </li>
+                    */-->
+                    <li class="nav-item">
+                        <a class="nav-link" href="#lien-he">Liên hệ</a>
+                    </li>
+                    <li class="nav-item" sec:authorize="hasAnyRole('ADMIN', 'NHANVIEN')">
+                        <a class="nav-link" th:href="@{/quan-tri}" th:classappend="${@duongDan.dangO('/quan-tri')} ? 'active'">Quản trị</a>
+                    </li>
+                    <li class="nav-item d-md-none">
+                        <a class="nav-link" th:href="|tel:#{cuahang.hotline-so}|"><i class="bi bi-telephone" aria-hidden="true"></i>Hotline <span th:text="#{cuahang.hotline}">1800 0000</span></a>
+                    </li>
+                </ul>
+
+                <ul class="navbar-nav align-items-lg-center pb-3 pb-lg-0">
+                    <th:block sec:authorize="isAnonymous()">
+                        <li class="nav-item">
+                            <a class="nav-link" th:href="@{/dang-nhap}" th:classappend="${@duongDan.laTrang('/dang-nhap')} ? 'active'">Đăng nhập</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="btn btn-sm btn-outline-secondary" th:href="@{/dang-ky}">Đăng ký</a>
+                        </li>
+                    </th:block>
+
+                    <li class="nav-item dropdown" sec:authorize="isAuthenticated()">
+                        <a class="nav-link nguoi-dung dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false"
+                           th:with="hoTen=${#authentication.principal.hoTen}">
+                            <span class="anh-dai-dien" aria-hidden="true"
+                                  th:text="${#strings.toUpperCase(#strings.substring(hoTen, hoTen.lastIndexOf(' ') + 1, hoTen.lastIndexOf(' ') + 2))}">A</span>
+                            <span>
+                                <span class="nguoi-dung-ten" sec:authentication="principal.hoTen">Họ tên</span>
+                                <span class="nguoi-dung-vai-tro" sec:authentication="principal.tenVaiTro">Vai trò</span>
+                            </span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li sec:authorize="hasAnyRole('ADMIN', 'NHANVIEN')">
+                                <a class="dropdown-item" th:href="@{/quan-tri}"><i class="bi bi-speedometer2" aria-hidden="true"></i>Trang quản trị</a>
+                            </li>
+                            <li sec:authorize="hasRole('ADMIN')">
+                                <a class="dropdown-item" th:href="@{/quan-tri/tai-khoan}"><i class="bi bi-people" aria-hidden="true"></i>Quản lý tài khoản</a>
+                            </li>
+                            <li sec:authorize="hasRole('ADMIN')">
+                                <a class="dropdown-item" th:href="@{/quan-tri/lich-su-dang-nhap}"><i class="bi bi-clock-history" aria-hidden="true"></i>Lịch sử đăng nhập</a>
+                            </li>
+                            <li sec:authorize="hasAnyRole('ADMIN', 'NHANVIEN')"><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" th:href="@{/tai-khoan}"><i class="bi bi-person" aria-hidden="true"></i>Thông tin tài khoản</a></li>
+                            <li><a class="dropdown-item" th:href="@{/tai-khoan/doi-mat-khau}"><i class="bi bi-key" aria-hidden="true"></i>Đổi mật khẩu</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <!-- Đăng xuất phải dùng POST kèm CSRF token (th:action tự chèn token) -->
+                                <form th:action="@{/dang-xuat}" method="post">
+                                    <button type="submit" class="dropdown-item"><i class="bi bi-box-arrow-right" aria-hidden="true"></i>Đăng xuất</button>
+                                </form>
+                            </li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+</header>
+</body>
+</html>

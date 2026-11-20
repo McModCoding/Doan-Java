@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    POM gốc: chỉ dùng để gom 2 dự án con lại cho tiện mở bằng IDE và build một lần.
+      - web/    : ứng dụng Web Spring Boot (chạy trên cổng 8080, kèm Socket server cổng 9090)
+      - client/ : chương trình client tách biệt (Java thuần, kết nối tới Socket server)
+    Mỗi dự án con vẫn build độc lập được: cd web && mvn spring-boot:run
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.xemay</groupId>
+    <artifactId>web-xe-may</artifactId>
+    <version>1.0.0</version>
+    <packaging>pom</packaging>
+    <name>Web bán xe máy - đồ án Công nghệ Java</name>
+
+    <modules>
+        <module>web</module>
+        <module>client</module>
+    </modules>
+</project>

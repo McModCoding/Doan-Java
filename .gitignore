@@ -1,0 +1,30 @@
+# Kết quả build
+target/
+*.class
+*.jar
+!.mvn/wrapper/maven-wrapper.jar
+
+# Cấu hình riêng của từng máy (mật khẩu SQL Server...) - KHÔNG commit
+application-local.properties
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.settings/
+.project
+.classpath
+.factorypath
+nbproject/
+nbactions.xml
+.apt_generated/
+
+# Hệ điều hành
+.DS_Store
+Thumbs.db
+
+# Log
+*.log
+
+# File nén để gửi cho nhóm
+*.zip

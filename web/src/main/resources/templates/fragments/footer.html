@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<body>
+<!--/* CHÂN TRANG: thông tin cửa hàng lấy từ messages.properties (khóa cuahang.*). id="lien-he" để mục "Liên hệ" trên menu nhảy tới. */-->
+<footer th:fragment="footer" id="lien-he" class="chan-trang">
+    <div class="container">
+        <div class="row g-4 g-lg-5">
+            <div class="col-lg-5">
+                <a class="logo logo-toi" th:href="@{/}">
+                    <span class="logo-dau" aria-hidden="true"></span><span th:text="#{cuahang.ten}">Web Xe Máy</span>
+                </a>
+                <p class="mt-3 mb-4" th:text="#{cuahang.mo-ta}">Mô tả cửa hàng</p>
+                <div class="chan-trang-hotline">
+                    <span>Hotline tư vấn và đặt xe</span>
+                    <a th:href="|tel:#{cuahang.hotline-so}|" th:text="#{cuahang.hotline}">1800 0000</a>
+                </div>
+            </div>
+
+            <!--/* Thành viên phụ trách giao diện: thêm cột "Sản phẩm" (Xe số, Xe tay ga, Xe côn tay, Xe điện) khi trang /xe-may đã làm xong
+            <div class="col-sm-6 col-lg-2"> ... </div>
+            */-->
+
+            <div class="col-sm-6 col-lg-3">
+                <h2 class="chan-trang-tieu-de">Tài khoản</h2>
+                <ul class="list-unstyled chan-trang-danh-sach mb-0">
+                    <li sec:authorize="isAnonymous()"><a th:href="@{/dang-nhap}">Đăng nhập</a></li>
+                    <li sec:authorize="isAnonymous()"><a th:href="@{/dang-ky}">Đăng ký tài khoản</a></li>
+                    <li sec:authorize="isAuthenticated()"><a th:href="@{/tai-khoan}">Thông tin tài khoản</a></li>
+                    <li sec:authorize="isAuthenticated()"><a th:href="@{/tai-khoan/doi-mat-khau}">Đổi mật khẩu</a></li>
+                    <li sec:authorize="hasAnyRole('ADMIN', 'NHANVIEN')"><a th:href="@{/quan-tri}">Trang quản trị</a></li>
+                </ul>
+            </div>
+
+            <div class="col-sm-6 col-lg-4">
+                <h2 class="chan-trang-tieu-de">Showroom</h2>
+                <address class="mb-2" th:text="#{cuahang.dia-chi}">Địa chỉ</address>
+                <p class="mb-0" th:text="#{cuahang.gio-mo-cua}">Giờ mở cửa</p>
+            </div>
+        </div>
+
+        <div class="chan-trang-cuoi d-flex flex-column flex-md-row justify-content-between gap-2">
+            <span>&copy; <span th:text="${#temporals.year(#temporals.createNow())}">2026</span>
+                <span th:text="#{cuahang.ten}">Web Xe Máy</span>. Đồ án môn Công nghệ Java.</span>
+            <span>Spring Boot · Thymeleaf · Bootstrap · SQL Server</span>
+        </div>
+    </div>
+</footer>
+</body>
+</html>

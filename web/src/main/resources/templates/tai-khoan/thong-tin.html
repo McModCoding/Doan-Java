@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: trang(~{::title}, ~{::section})}">
+<head><title th:text="'Thông tin tài khoản | ' + #{cuahang.ten}">Thông tin tài khoản | Web Xe Máy</title></head>
+<body>
+<section>
+    <div class="dau-trang">
+        <div>
+            <h1>Tài khoản của tôi</h1>
+            <p class="dau-trang-mo-ta">Cập nhật thông tin liên hệ để cửa hàng gọi xác nhận đơn và giao xe đúng người.</p>
+        </div>
+    </div>
+
+    <div class="row g-4 g-lg-5">
+        <div class="col-lg-3">
+            <aside th:replace="~{fragments/tai-khoan :: menu}"></aside>
+        </div>
+
+        <div class="col-lg-9 col-xl-8">
+            <div class="card mb-4">
+                <div class="card-header"><h2>Thông tin đăng nhập</h2></div>
+                <div class="card-body">
+                    <dl class="danh-sach-thong-tin">
+                        <dt>Tên đăng nhập</dt>
+                        <dd th:text="${taiKhoan.tenDangNhap}">admin</dd>
+                        <dt>Vai trò</dt>
+                        <dd th:text="${taiKhoan.vaiTro.ten}">Quản trị viên</dd>
+                        <dt>Ngày tạo</dt>
+                        <dd class="so" th:text="${#temporals.format(taiKhoan.ngayTao, 'dd/MM/yyyy')}">01/01/2026</dd>
+                    </dl>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header"><h2>Thông tin liên hệ</h2></div>
+                <div class="card-body">
+                    <form th:action="@{/tai-khoan}" th:object="${form}" method="post" novalidate>
+                        <div class="mb-3">
+                            <label for="hoTen" class="form-label">Họ và tên <span class="text-danger">*</span></label>
+                            <input type="text" th:field="*{hoTen}" class="form-control" th:errorclass="is-invalid" maxlength="100" autocomplete="name">
+                            <div class="invalid-feedback" th:errors="*{hoTen}"></div>
+                        </div>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-7">
+                                <label for="email" class="form-label">Email <span class="text-danger">*</span></label>
+                                <input type="email" th:field="*{email}" class="form-control" th:errorclass="is-invalid" maxlength="100" autocomplete="email">
+                                <div class="invalid-feedback" th:errors="*{email}"></div>
+                            </div>
+                            <div class="col-md-5">
+                                <label for="soDienThoai" class="form-label">Số điện thoại</label>
+                                <input type="tel" th:field="*{soDienThoai}" class="form-control" th:errorclass="is-invalid" maxlength="10" autocomplete="tel">
+                                <div class="invalid-feedback" th:errors="*{soDienThoai}"></div>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Lưu thay đổi</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+</body>
+</html>

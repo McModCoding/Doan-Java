@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<!--/* Dùng chung cho THÊM (form.id == null) và SỬA tài khoản. */-->
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: trang(~{::title}, ~{::section})}">
+<head><title th:text="'Tài khoản | ' + #{cuahang.ten}">Tài khoản | Web Xe Máy</title></head>
+<body>
+<section th:with="laThem=${form.id == null}, laToi=${!laThem and form.tenDangNhap == #authentication.name}">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a th:href="@{/quan-tri}">Quản trị</a></li>
+            <li class="breadcrumb-item"><a th:href="@{/quan-tri/tai-khoan}">Tài khoản</a></li>
+            <li class="breadcrumb-item active" aria-current="page" th:text="${laThem} ? 'Thêm mới' : ${form.tenDangNhap}">Thêm mới</li>
+        </ol>
+    </nav>
+    <div class="dau-trang">
+        <div>
+            <h1 th:text="${laThem} ? 'Thêm tài khoản' : 'Sửa tài khoản'">Thêm tài khoản</h1>
+            <p class="dau-trang-mo-ta" th:if="${laThem}">Tạo tài khoản cho nhân viên mới hoặc khách hàng đến mua tại cửa hàng.</p>
+            <p class="dau-trang-mo-ta" th:unless="${laThem}">Tên đăng nhập không đổi được. Muốn đổi mật khẩu, dùng mục Đặt lại mật khẩu.</p>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-body">
+                    <div th:if="${laToi}" class="alert alert-info">
+                        <i class="bi bi-info-circle" aria-hidden="true"></i>
+                        <span>Đây là tài khoản bạn đang dùng: bạn không thể tự đổi vai trò hoặc tự khóa chính mình.</span>
+                    </div>
+
+                    <form th:object="${form}" method="post" novalidate
+                          th:action="${laThem} ? @{/quan-tri/tai-khoan/them} : @{/quan-tri/tai-khoan/{id}/sua(id=${form.id})}">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="tenDangNhap" class="form-label">Tên đăng nhập <span th:if="${laThem}" class="text-danger">*</span></label>
+                                <input th:if="${laThem}" type="text" th:field="*{tenDangNhap}" class="form-control"
+                                       th:errorclass="is-invalid" maxlength="30" autocomplete="off">
+                                <input th:unless="${laThem}" type="text" id="tenDangNhap" class="form-control-plaintext fw-semibold"
+                                       th:value="*{tenDangNhap}" readonly>
+                                <div class="invalid-feedback" th:if="${laThem}" th:errors="*{tenDangNhap}"></div>
+                            </div>
+                            <div class="col-md-6" th:if="${laThem}">
+                                <label for="matKhau" class="form-label">Mật khẩu <span class="text-danger">*</span></label>
+                                <input type="password" th:field="*{matKhau}" class="form-control" th:errorclass="is-invalid"
+                                       maxlength="50" autocomplete="new-password">
+                                <div class="invalid-feedback" th:errors="*{matKhau}"></div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="hoTen" class="form-label">Họ và tên <span class="text-danger">*</span></label>
+                                <input type="text" th:field="*{hoTen}" class="form-control" th:errorclass="is-invalid" maxlength="100">
+                                <div class="invalid-feedback" th:errors="*{hoTen}"></div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="email" class="form-label">Email <span class="text-danger">*</span></label>
+                                <input type="email" th:field="*{email}" class="form-control" th:errorclass="is-invalid" maxlength="100">
+                                <div class="invalid-feedback" th:errors="*{email}"></div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="soDienThoai" class="form-label">Số điện thoại</label>
+                                <input type="tel" th:field="*{soDienThoai}" class="form-control" th:errorclass="is-invalid" maxlength="10">
+                                <div class="invalid-feedback" th:errors="*{soDienThoai}"></div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="vaiTroId" class="form-label">Vai trò <span class="text-danger">*</span></label>
+                                <select th:field="*{vaiTroId}" class="form-select" th:errorclass="is-invalid">
+                                    <option value="">Chọn vai trò</option>
+                                    <option th:each="vt : ${danhSachVaiTro}" th:value="${vt.id}" th:text="${vt.ten}">Vai trò</option>
+                                </select>
+                                <div class="invalid-feedback" th:errors="*{vaiTroId}"></div>
+                            </div>
+                            <div class="col-12">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" role="switch" th:field="*{kichHoat}">
+                                    <label class="form-check-label" th:for="${#ids.prev('kichHoat')}">Cho phép đăng nhập (tài khoản đang hoạt động)</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex flex-wrap gap-2 mt-4">
+                            <button type="submit" class="btn btn-primary" th:text="${laThem} ? 'Tạo tài khoản' : 'Lưu thay đổi'">Lưu</button>
+                            <a class="btn btn-outline-secondary" th:href="@{/quan-tri/tai-khoan}">Hủy</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Đặt lại mật khẩu: form riêng, chỉ có khi SỬA -->
+        <div class="col-lg-4" th:unless="${laThem}">
+            <div class="card">
+                <div class="card-header"><h2>Đặt lại mật khẩu</h2></div>
+                <div class="card-body">
+                    <form method="post" th:action="@{/quan-tri/tai-khoan/{id}/dat-lai-mat-khau(id=${form.id})}"
+                          th:data-xac-nhan="|Đặt lại mật khẩu cho tài khoản ${form.tenDangNhap}?|"
+                          data-nut-xac-nhan="Đặt lại" data-kieu-nut="btn-primary">
+                        <label for="matKhauMoi" class="form-label">Mật khẩu mới</label>
+                        <input type="password" id="matKhauMoi" name="matKhauMoi" class="form-control"
+                               maxlength="50" autocomplete="new-password" required>
+                        <div class="form-text mb-3">Từ 6 ký tự, không có khoảng trắng và chữ có dấu. Báo mật khẩu mới cho người dùng qua kênh riêng.</div>
+                        <button type="submit" class="btn btn-outline-secondary w-100">Đặt lại mật khẩu</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+</body>
+</html>

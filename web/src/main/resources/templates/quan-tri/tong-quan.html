@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:replace="~{fragments/layout :: trang(~{::title}, ~{::section})}">
+<head><title th:text="'Quản trị | ' + #{cuahang.ten}">Quản trị | Web Xe Máy</title></head>
+<body>
+<section>
+    <div class="dau-trang mb-3">
+        <div>
+            <h1>Quản trị cửa hàng</h1>
+            <p class="dau-trang-mo-ta">Xin chào <span class="fw-semibold text-body-emphasis" sec:authentication="principal.hoTen">bạn</span>,
+                đây là tình hình cửa hàng lúc này.</p>
+        </div>
+    </div>
+    <div th:replace="~{fragments/quan-tri :: menu}"></div>
+
+    <div class="row g-3 mb-5">
+        <div class="col-6 col-xl-3">
+            <div class="so-lieu">
+                <div class="so-lieu-nhan">Tài khoản</div>
+                <div class="so-lieu-gia-tri" th:text="${soTaiKhoan}">0</div>
+                <div class="so-lieu-phu">Gồm quản trị viên, nhân viên và khách hàng</div>
+            </div>
+        </div>
+        <div class="col-6 col-xl-3">
+            <div class="so-lieu">
+                <div class="so-lieu-nhan">Khách hàng</div>
+                <div class="so-lieu-gia-tri" th:text="${soKhachHang}">0</div>
+                <div class="so-lieu-phu">Tài khoản có vai trò khách hàng</div>
+            </div>
+        </div>
+        <div class="col-6 col-xl-3">
+            <div class="so-lieu">
+                <div class="so-lieu-nhan">Mẫu xe sắp hết</div>
+                <div class="so-lieu-gia-tri" th:text="${#lists.size(canhBaoTonKho.danhSach)}">0</div>
+                <div class="so-lieu-phu" th:text="|Còn từ ${canhBaoTonKho.nguong} xe trở xuống|">Còn từ 3 xe trở xuống</div>
+            </div>
+        </div>
+        <div class="col-6 col-xl-3">
+            <div class="so-lieu">
+                <div class="so-lieu-nhan">Client kho đang kết nối</div>
+                <div class="so-lieu-gia-tri" th:text="${socket != null and socket.dangChay} ? ${socket.soClientDangPhucVu} : '-'">0</div>
+                <div class="so-lieu-phu" th:text="${socket != null and socket.dangChay} ? |Tối đa ${socket.soClientToiDa} client cùng lúc| : 'Socket server không chạy'">Tối đa 10</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Kết quả do tác vụ định kỳ (@Scheduled) quét sẵn; trang này chỉ đọc kết quả -->
+        <div class="col-lg-7">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h2>Mẫu xe sắp hết hàng</h2>
+                    <span class="chu-phu chu-nho so" th:if="${canhBaoTonKho.thoiDiemQuet != null}"
+                          th:text="|Cập nhật ${#temporals.format(canhBaoTonKho.thoiDiemQuet, 'HH:mm dd/MM')}|">Cập nhật</span>
+                </div>
+                <p class="card-body chu-phu mb-0" th:if="${canhBaoTonKho.thoiDiemQuet == null}">
+                    Hệ thống chưa quét tồn kho lần nào. Lần quét đầu tiên chạy vài giây sau khi khởi động.
+                </p>
+                <p class="card-body mb-0" th:if="${canhBaoTonKho.thoiDiemQuet != null and #lists.isEmpty(canhBaoTonKho.danhSach)}">
+                    <span class="nhan nhan-thanh-cong">Đủ hàng</span> Không có mẫu xe nào sắp hết.
+                </p>
+                <div class="table-responsive" th:unless="${canhBaoTonKho.thoiDiemQuet == null or #lists.isEmpty(canhBaoTonKho.danhSach)}">
+                    <table class="table align-middle">
+                        <thead>
+                        <tr><th class="d-none d-sm-table-cell">Mã</th><th>Mẫu xe</th><th class="text-end">Tồn kho</th></tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="muc : ${canhBaoTonKho.danhSach}">
+                            <td class="d-none d-sm-table-cell so chu-phu" th:text="${muc.id}">1</td>
+                            <td class="o-chinh" th:text="${muc.tenXe}">Tên xe</td>
+                            <td class="text-end">
+                                <span th:if="${muc.soLuongTon == 0}" class="nhan nhan-loi">Hết hàng</span>
+                                <span th:unless="${muc.soLuongTon == 0}" class="nhan nhan-canh-bao so" th:text="|Còn ${muc.soLuongTon}|">Còn 1</span>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-5">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h2>Socket server quản lý kho</h2>
+                    <span th:if="${socket != null and socket.dangChay}" class="nhan nhan-thanh-cong">Đang chạy</span>
+                    <span th:unless="${socket != null and socket.dangChay}" class="nhan nhan-loi">Không chạy</span>
+                </div>
+                <div class="card-body">
+                    <p th:if="${socket == null or !socket.dangChay}" class="mb-0 chu-phu">
+                        Socket server không chạy. Xem log khi khởi động để biết lý do.
+                    </p>
+                    <th:block th:if="${socket != null and socket.dangChay}">
+                        <dl class="danh-sach-thong-tin mb-4">
+                            <dt>Cổng</dt>
+                            <dd class="so" th:text="${socket.cong}">9090</dd>
+                            <dt>Đang phục vụ</dt>
+                            <dd class="so" th:text="|${socket.soClientDangPhucVu} / ${socket.soClientToiDa} client|">0 / 10</dd>
+                            <dt>Tổng số lần kết nối</dt>
+                            <dd class="so" th:text="${socket.tongSoKetNoi}">0</dd>
+                            <dt>Từ chối do quá tải</dt>
+                            <dd class="so" th:text="${socket.soKetNoiBiTuChoi}">0</dd>
+                        </dl>
+                        <p class="chu-phu chu-nho mb-2">Chạy chương trình client trên máy nhân viên kho:</p>
+                        <code class="d-block bg-body-tertiary rounded px-3 py-2 text-body-emphasis"
+                              th:text="|java -jar xemay-client.jar localhost ${socket.cong}|">java -jar xemay-client.jar localhost 9090</code>
+                    </th:block>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+</body>
+</html>

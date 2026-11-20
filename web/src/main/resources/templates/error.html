@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<!--/*
+    TRANG BÁO LỖI THÂN THIỆN cho mọi lỗi: 403 (không đủ quyền), 404 (không tìm thấy), 400/409 (lỗi nghiệp vụ),
+    500 (lỗi hệ thống). Spring Boot tự dùng trang này; GlobalExceptionHandler cũng trả về trang này kèm "thongDiep".
+*/-->
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: trang(~{::title}, ~{::section})}">
+<head><title th:text="'Thông báo lỗi | ' + #{cuahang.ten}">Thông báo lỗi | Web Xe Máy</title></head>
+<body>
+<section class="trang-loi" th:with="ma=${status != null ? status : 500}">
+    <div class="trang-loi-ma" th:text="${ma}" aria-hidden="true">500</div>
+    <h1 class="h2 mb-3" th:switch="${ma}">
+        <span th:case="403">Bạn không có quyền xem trang này</span>
+        <span th:case="404">Không tìm thấy trang bạn cần</span>
+        <span th:case="400">Không thể thực hiện yêu cầu</span>
+        <span th:case="409">Không thể thực hiện yêu cầu</span>
+        <span th:case="*">Hệ thống đang gặp sự cố</span>
+    </h1>
+
+    <p th:if="${thongDiep}" th:text="${thongDiep}">Chi tiết lỗi</p>
+    <p th:unless="${thongDiep}" th:switch="${ma}">
+        <span th:case="403">Trang này dành cho tài khoản có vai trò khác. Hãy đăng nhập bằng tài khoản phù hợp hoặc quay lại trang chủ.</span>
+        <span th:case="404">Đường dẫn có thể bị gõ sai hoặc trang không còn tồn tại.</span>
+        <span th:case="*">Vui lòng thử lại sau ít phút. Nếu cần hỗ trợ ngay, gọi hotline
+            <a th:href="|tel:#{cuahang.hotline-so}|" th:text="#{cuahang.hotline}">1800 0000</a>.</span>
+    </p>
+
+    <div class="d-flex flex-wrap justify-content-center gap-2 mt-4">
+        <a class="btn btn-primary" th:href="@{/}">Về trang chủ</a>
+        <a class="btn btn-outline-secondary" href="javascript:history.back()"><i class="bi bi-arrow-left" aria-hidden="true"></i>Quay lại</a>
+    </div>
+</section>
+</body>
+</html>

@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<body>
+<!--/*
+    Thông báo chung ở đầu trang. Trong Controller:
+      - Sau khi lưu rồi chuyển hướng:  chuyenHuong.addFlashAttribute("thongBaoThanhCong", "Đã lưu ...");
+      - Hiển thị lỗi trên trang hiện tại: model.addAttribute("thongBaoLoi", "...");
+*/-->
+<div th:fragment="thongBao">
+    <div th:if="${thongBaoThanhCong}" class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="bi bi-check-circle" aria-hidden="true"></i>
+        <span th:text="${thongBaoThanhCong}">Thành công</span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Đóng"></button>
+    </div>
+    <div th:if="${thongBaoLoi}" class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-circle" aria-hidden="true"></i>
+        <span th:text="${thongBaoLoi}">Lỗi</span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Đóng"></button>
+    </div>
+</div>
+</body>
+</html>

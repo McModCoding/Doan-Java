@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Chương trình client TÁCH BIỆT với ứng dụng Web (yêu cầu tối thiểu số 4 của đồ án).
+    Java thuần, không dùng thư viện ngoài: chỉ java.net.Socket.
+    Build:  mvn package        Chạy:  java -jar target/xemay-client.jar
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.xemay</groupId>
+    <artifactId>xemay-client</artifactId>
+    <version>1.0.0</version>
+    <packaging>jar</packaging>
+    <name>xemay-client</name>
+    <description>Client quản lý kho xe máy, kết nối tới Socket server của ứng dụng Web</description>
+
+    <properties>
+        <maven.compiler.release>17</maven.compiler.release>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
+    <build>
+        <finalName>xemay-client</finalName>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.14.0</version>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.4.2</version>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <!-- Lớp chạy mặc định khi gõ: java -jar xemay-client.jar -->
+                            <mainClass>com.xemay.client.KhoClient</mainClass>
+                        </manifest>
+                    </archive>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>
