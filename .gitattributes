@@ -1,0 +1,8 @@
+# Chuẩn hóa ký tự xuống dòng: trong repo luôn là LF, Git trên Windows tự đổi sang CRLF khi checkout.
+* text=auto
+mvnw text eol=lf
+*.cmd text eol=crlf
+*.jpg binary
+*.png binary
+*.woff2 binary
+*.pdf binary
