@@ -22,13 +22,12 @@
 
     <div class="row g-4">
         <div class="col-lg-8">
+            <div th:if="${laToi}" class="alert alert-info">
+                <i class="bi bi-info-circle" aria-hidden="true"></i>
+                <span>Đây là tài khoản bạn đang dùng: bạn không thể tự đổi vai trò hoặc tự khóa chính mình.</span>
+            </div>
             <div class="card">
                 <div class="card-body">
-                    <div th:if="${laToi}" class="alert alert-info">
-                        <i class="bi bi-info-circle" aria-hidden="true"></i>
-                        <span>Đây là tài khoản bạn đang dùng: bạn không thể tự đổi vai trò hoặc tự khóa chính mình.</span>
-                    </div>
-
                     <form th:object="${form}" method="post" novalidate
                           th:action="${laThem} ? @{/quan-tri/tai-khoan/them} : @{/quan-tri/tai-khoan/{id}/sua(id=${form.id})}">
                         <div class="row g-3">

@@ -21,14 +21,14 @@
 
     <div class="row">
         <div class="col-lg-8">
+            <!-- Hộp thông tin đặt NGOÀI khung form (quy chuẩn giao diện: không lồng thẻ trong thẻ) -->
+            <div th:if="${form.coTaiKhoan()}" class="alert alert-info">
+                <i class="bi bi-info-circle" aria-hidden="true"></i>
+                <span>Khách hàng có tài khoản web <strong th:text="${form.tenDangNhap}">khach1</strong>:
+                    họ tên và số điện thoại sửa ở đây sẽ cập nhật cho cả tài khoản.</span>
+            </div>
             <div class="card">
                 <div class="card-body">
-                    <div th:if="${form.coTaiKhoan()}" class="alert alert-info">
-                        <i class="bi bi-info-circle" aria-hidden="true"></i>
-                        <span>Khách hàng có tài khoản web <strong th:text="${form.tenDangNhap}">khach1</strong>:
-                            họ tên và số điện thoại sửa ở đây sẽ cập nhật cho cả tài khoản.</span>
-                    </div>
-
                     <form th:object="${form}" method="post" novalidate
                           th:action="${laThem} ? @{/quan-tri/khach-hang/them} : @{/quan-tri/khach-hang/{id}/sua(id=${form.maKhachHang})}">
                         <div class="row g-3">
