@@ -1,7 +1,8 @@
 # Hướng dẫn tích hợp cho các thành viên
 
-Tài liệu này dành cho các thành viên làm giao diện, khách hàng, xe máy - hãng xe, giỏ hàng - hóa đơn.
-Mọi người làm trên **cùng một dự án** này (không tạo dự án riêng), theo các quy ước dưới đây để khi gộp không phải sửa lại.
+Phần của các thành viên 1, 3, 4 đã được ghép vào dự án này (xem [bao-cao-tich-hop.md](bao-cao-tich-hop.md)).
+Tài liệu này dành cho người làm **phần còn lại** (giao diện cho khách, giỏ hàng - đặt hàng - hóa đơn) và cho ai sửa tiếp
+phần đã ghép. Mọi người làm trên **cùng một dự án** này (không tạo dự án riêng), theo các quy ước dưới đây.
 
 ## 1. Quy ước chung
 
@@ -9,15 +10,16 @@ Mọi người làm trên **cùng một dự án** này (không tạo dự án r
 |---|---|
 | Package | `com.xemay.controller`, `.service`, `.repository`, `.entity`, `.dto`, `.config`. Trang quản trị đặt trong `controller/quantri` |
 | Tên lớp, biến | Tiếng Việt không dấu, kiểu camelCase (`XeMayService`, `timTheoHang`) |
-| Bảng, cột | chữ thường, gạch dưới (`hang_xe`, `ngay_dat`); chuỗi dùng `NVARCHAR` để lưu tiếng Việt |
+| Bảng, cột | **Theo script chung** `database/QL_CUAHANG_XEMAY.sql`: bảng `CHU_HOA_GACH_DUOI` (`DON_HANG`), cột `PascalCase` (`MaDonHang`, `NgayDat`) |
+| Entity | **Mọi** thuộc tính ghi rõ `@Column(name = "...")`, khóa ngoại ghi `@JoinColumn(name = "...")` (xem lý do ở mục 7). Cột `NVARCHAR` thêm `@Nationalized`. Khóa chính `INT IDENTITY` dùng kiểu `Integer` |
 | Nghiệp vụ | Viết trong **Service**, không viết trong Controller. Thao tác nhiều bước có `@Transactional` |
 | URL người dùng | `/xe-may`, `/xe-may/{id}`, `/hang-xe`, `/gio-hang`, `/dat-hang`, `/don-hang` |
-| URL quản trị | `/quan-tri/xe-may`, `/quan-tri/hang-xe`, `/quan-tri/khach-hang`, `/quan-tri/hoa-don` |
+| URL quản trị | `/quan-tri/xe-may`, `/quan-tri/hang-xe`, `/quan-tri/khach-hang` (đã có), `/quan-tri/don-hang`, `/quan-tri/hoa-don` |
 | Thêm / sửa / xóa | `GET .../them`, `POST .../them`, `GET .../{id}/sua`, `POST .../{id}/sua`, `POST .../{id}/xoa` (xóa luôn dùng POST) |
 
 ## 2. Phân quyền: trang mới của bạn ai được vào?
 
-Quy tắc nằm trong `config/SecurityConfig.java`. Hiện tại:
+Quy tắc theo URL nằm trong `config/SecurityConfig.java`:
 
 | URL | Ai được vào |
 |---|---|
@@ -27,32 +29,45 @@ Quy tắc nằm trong `config/SecurityConfig.java`. Hiện tại:
 | `/quan-tri/**` | Quản trị viên và nhân viên |
 | **Mọi URL khác** (`/gio-hang`, `/dat-hang`, `/don-hang`, `/tai-khoan`...) | Phải đăng nhập |
 
-Nghĩa là: đặt trang quản trị dưới `/quan-tri/...`, trang của khách dưới các URL còn lại, thì **không cần sửa gì** trong `SecurityConfig`.
-Chỉ khi muốn một trang mới được xem công khai thì mới thêm đường dẫn của nó vào nhóm `permitAll()`.
+Đặt trang quản trị dưới `/quan-tri/...`, trang của khách dưới các URL còn lại, thì **không cần sửa gì** trong `SecurityConfig`.
 
-Muốn chặn chặt hơn ở tầng Service (ví dụ chỉ quản trị viên được xóa xe), thêm annotation lên phương thức:
+Quyền chi tiết hơn đặt bằng `@PreAuthorize` trên phương thức của Service (đã áp dụng cho phần đã ghép):
+
+| Thao tác | Quản trị viên | Nhân viên |
+|---|---|---|
+| Xem, tìm, thêm, sửa xe máy; nhập kho | Có | Có |
+| Ngừng kinh doanh / mở bán lại xe | Có | Không |
+| Xem, thêm, sửa hãng xe | Có | Có |
+| Ngừng hoạt động / mở lại hãng xe | Có | Không |
+| Xem, tìm, thêm, sửa khách hàng | Có | Có |
+| Xóa khách hàng | Có | Không |
+| Quản lý tài khoản, xem lịch sử đăng nhập | Có | Không |
+
+Đây là cách chia tạm do người tích hợp đề xuất; nhóm muốn đổi (ví dụ cho nhân viên xóa hóa đơn) thì sửa `@PreAuthorize` tương ứng.
 
 ```java
 @PreAuthorize("hasRole('ADMIN')")
 @Transactional
-public void xoa(Long id) { ... }
+public void xoa(Integer maDonHang) { ... }
 ```
 
-## 3. Lấy người dùng đang đăng nhập
-
-Trong Controller:
+## 3. Lấy người dùng đang đăng nhập và hồ sơ khách hàng
 
 ```java
 @GetMapping("/gio-hang")
 public String gioHang(@AuthenticationPrincipal TaiKhoanDetails nguoiDung, Model model) {
-    Long taiKhoanId = nguoiDung.getId();          // mã trong bảng tai_khoan
-    String hoTen = nguoiDung.getHoTen();
-    boolean laNhanSu = nguoiDung.laNhanSu();      // quản trị viên hoặc nhân viên
+    Integer maTaiKhoan = nguoiDung.getId();          // cột MaTaiKhoan
+    KhachHang khach = khachHangService.timTheoTaiKhoan(maTaiKhoan)
+            .orElseThrow(() -> new NghiepVuException("Tài khoản chưa có hồ sơ khách hàng."));
+    Integer maKhachHang = khach.getMaKhachHang();     // dùng cho GIO_HANG, DON_HANG
     ...
 }
 ```
 
-Trong template (cần khai báo `xmlns:sec="http://www.thymeleaf.org/extras/spring-security"` ở thẻ `<html>`):
+Mỗi tài khoản khách hàng **luôn có** một hồ sơ `KHACH_HANG` (tạo cùng lúc khi đăng ký hoặc khi quản trị viên tạo tài khoản).
+Khách mua tại cửa hàng thì có hồ sơ nhưng không có tài khoản (`MaTaiKhoan = NULL`).
+
+Trong template (khai báo `xmlns:sec="http://www.thymeleaf.org/extras/spring-security"` ở thẻ `<html>`):
 
 ```html
 <span sec:authentication="principal.hoTen">Họ tên</span>
@@ -62,9 +77,9 @@ Trong template (cần khai báo `xmlns:sec="http://www.thymeleaf.org/extras/spri
 
 ## 4. Giao diện: theo quy chuẩn và bố cục chung
 
-**Đọc `docs/quy-chuan-giao-dien.md` trước khi làm bất kỳ trang nào.** File này quy định màu, font, khoảng cách, các thành phần
-và danh sách những thứ không được làm. Mọi giá trị trong đó đã được cài sẵn trong `static/css/theme.css`, nên khi làm trang
-chỉ cần dùng lớp có sẵn, không tự đặt màu, font hay `style=""`.
+**Đọc `docs/quy-chuan-giao-dien.md` trước khi làm bất kỳ trang nào.** Mọi giá trị trong đó đã được cài sẵn trong
+`static/css/theme.css`, nên khi làm trang chỉ cần dùng lớp có sẵn, không tự đặt màu, font hay `style=""`.
+**Không tải CSS, font, biểu tượng từ CDN** (demo ở phòng lab không có Internet): Bootstrap và Bootstrap Icons đã có qua WebJars.
 
 Mỗi trang chỉ viết phần nội dung riêng, đặt trong **một** thẻ `<section>`; header, menu, footer, thông báo do bố cục chung lo:
 
@@ -95,10 +110,10 @@ Các lớp và mảnh dùng lại được:
 |---|---|
 | Tiêu đề trang + mô tả + nút bên phải | `.dau-trang`, `.dau-trang-mo-ta` |
 | Thẻ xe trong danh sách | `.the-xe` gồm `.the-xe-anh` (ảnh 4:3), `.the-xe-ten`, `.the-xe-phu`, `.gia` (xem mục Thành phần của quy chuẩn giao diện) |
-| Giá bán | `.gia` (đỏ, đậm, chữ số thẳng cột) |
+| Giá bán | `.gia` (đỏ, đậm, chữ số thẳng cột); định dạng `${#numbers.formatDecimal(xe.giaBan, 1, 'POINT', 0, 'COMMA')} + ' đ'` |
 | Khung nội dung có tiêu đề | `.card` + `.card-header` (có `h2`) + `.card-body` |
 | Bảng | bọc trong `.bang-khung`, bảng `.table .table-hover .align-middle`; cột số thêm `.so` |
-| Nhãn trạng thái | `.nhan` + `nhan-thanh-cong` / `nhan-canh-bao` / `nhan-loi` / `nhan-dam` / `nhan-vien` |
+| Nhãn trạng thái | `.nhan` + `nhan-thanh-cong` / `nhan-canh-bao` / `nhan-loi` / `nhan-trung-tinh` / `nhan-dam` / `nhan-vien` |
 | Nút | `btn btn-primary` (một nút chính mỗi màn hình), `btn btn-outline-secondary` (nút phụ), `btn btn-icon` (thao tác trong bảng; thêm `nguy-hiem` cho nút xóa) |
 | Số liệu tổng quan | `.so-lieu`, `.so-lieu-nhan`, `.so-lieu-gia-tri`, `.so-lieu-phu` |
 | Thông báo sau khi lưu | Controller: `chuyenHuong.addFlashAttribute("thongBaoThanhCong", "Đã lưu ...")` - bố cục chung tự hiển thị |
@@ -109,11 +124,12 @@ Các lớp và mảnh dùng lại được:
 | Lỗi cạnh ô nhập | `th:errorclass="is-invalid"` trên ô và `<div class="invalid-feedback" th:errors="*{tenXe}"></div>` ngay sau |
 | Tên cửa hàng, hotline, địa chỉ | `th:text="#{cuahang.ten}"`, `#{cuahang.hotline}`... (sửa giá trị trong `messages.properties`) |
 
-Mẫu đầy đủ để chép: trang danh sách `templates/quan-tri/tai-khoan/danh-sach.html`, controller `QuanLyTaiKhoanController`.
+Mẫu đầy đủ để chép: `templates/quan-tri/xe-may/danh-sach.html` + `XeMayController` (danh sách có lọc, phân trang, sắp xếp),
+`templates/quan-tri/khach-hang/form.html` + `KhachHangController` (form thêm / sửa có kiểm tra dữ liệu).
 
 **Menu:** khi trang của bạn đã chạy, bỏ chú thích mục tương ứng trong `fragments/header.html` (menu chính),
-`fragments/quan-tri.html` (thanh mục quản trị), `fragments/tai-khoan.html` (menu "Tài khoản của tôi") và `fragments/footer.html`.
-Các mục này đã được viết sẵn và đặt trong chú thích.
+`fragments/quan-tri.html` (thanh mục quản trị: còn mục Hóa đơn), `fragments/tai-khoan.html` (menu "Tài khoản của tôi")
+và `fragments/footer.html` (cột Sản phẩm). Các mục này đã viết sẵn và đặt trong chú thích.
 
 **Ảnh:** đặt trong `static/images/`. Ảnh không phải của nhóm phải ghi nguồn và giấy phép trong `docs/nguon-anh-va-font.md`.
 
@@ -122,64 +138,63 @@ Các mục này đã được viết sẵn và đặt trong chú thích.
 **Lưu ý Thymeleaf 3.1:** trong `th:href`, `th:src` không được gọi bean (`${@tenBean...}`) hay đọc tham số URL (`${param...}`).
 Hãy tính trước bằng `th:with` rồi dùng biến, hoặc chuẩn bị sẵn trong Controller.
 
-## 5. Phần việc của từng thành viên cần nối vào
+## 5. Phần việc còn lại
 
-### Thành viên làm khách hàng (bảng `khach_hang`)
+### Thành viên làm giao diện trang chủ, danh sách xe, chi tiết xe, giỏ hàng
 
-- Bảng `khach_hang` nối **một - một** với `tai_khoan`: cột `tai_khoan_id BIGINT NOT NULL UNIQUE` + khóa ngoại tới `tai_khoan(id)`.
-  Họ tên, email, số điện thoại đã có ở `tai_khoan`, không lặp lại; `khach_hang` chỉ giữ địa chỉ, ngày sinh, giới tính...
-- Khi khách tự đăng ký, tạo hồ sơ khách hàng **trong cùng giao dịch** với tài khoản. Trong `TaiKhoanService.dangKy(...)`:
+- **Danh sách xe** `/xe-may`: dùng lại hàm tìm kiếm, lọc của phần xe máy, truyền `true` để chỉ lấy xe đang bán:
 
 ```java
-@Transactional
-public TaiKhoan dangKy(DangKyForm form) {
-    TaiKhoan taiKhoan = taoMoi(...);            // đã có sẵn
-    khachHangService.taoHoSo(taiKhoan);          // thêm dòng này - lỗi thì cả hai cùng bị hủy
-    return taiKhoan;
-}
+Page<XeMay> trang = xeMayService.timKiemVaLoc(tenXe, maHang, loaiXe, giaMin, giaMax, true, pageable);
+List<HangXe> dsHang = hangXeService.getHangXeDangHoatDong();   // cho ô lọc hãng
 ```
 
-- Khi quản trị viên xóa một tài khoản đã có hồ sơ khách hàng hoặc đơn hàng, `TaiKhoanService.xoa` đã tự báo
-  "không thể xóa vì đang có dữ liệu liên quan" (nhờ khóa ngoại) - không cần viết thêm.
-
-### Thành viên làm xe máy, hãng xe (bảng `xe_may`, `hang_xe`)
-
-- Entity `XeMay` hiện chỉ có 4 thuộc tính `id`, `tenXe`, `giaBan`, `soLuongTon`. Hãy **bổ sung** thêm thuộc tính
-  (`@ManyToOne HangXe hangXe`, màu sắc, hình ảnh...) nhưng **giữ nguyên 4 thuộc tính này** và tên cột của chúng.
-- Thay file `database/02_xe_may_tam_thoi.sql` bằng script đầy đủ của bạn (giữ đủ 4 cột trên).
-- **Không** cho form "sửa xe" ghi đè `soLuongTon`. Số tồn chỉ thay đổi qua `TonKhoService`:
-
-```java
-tonKhoService.nhapKho(xeId, soLuong);   // nhập hàng
-tonKhoService.xuatKho(xeId, soLuong);   // xuất hàng, ném HetHangException nếu không đủ
-```
-
-  Lý do: nếu form sửa xe lưu lại con số đọc từ lúc mở form, các lần bán xe diễn ra trong lúc đó sẽ bị mất.
+  Mỗi xe là một thẻ `.the-xe` (lưới 3 cột trên máy tính, 2 cột máy tính bảng, 1 cột điện thoại).
+- **Chi tiết xe** `/xe-may/{id}`: `xeMayService.getXeMayById(id)` (ném `KhongTimThayException` -> trang 404 nếu không có);
+  xe có `trangThai == false` thì không cho đặt mua. Bố cục theo mục Quy trình làm trang mới của quy chuẩn giao diện.
+- **Trang chủ**: thay nội dung `templates/index.html`, giữ dòng `th:replace` bố cục chung. Không cần sửa `TrangChuController`
+  nếu chỉ hiển thị nội dung tĩnh; muốn hiện xe mới về thì thêm vào Controller.
+- **Ảnh xe**: cột `XE_MAY.HinhAnh` trong dữ liệu mẫu đang để trống. Thêm ảnh vào `static/images/xe/`, cập nhật giá trị
+  `HinhAnh` trong script (ví dụ `/images/xe/vision.jpg`) và ghi nguồn ảnh. Nhân viên cũng sửa được đường dẫn ảnh ở trang sửa xe.
+- `GET /xe-may/**` đã cho khách chưa đăng nhập xem. **Giữ các thuộc tính `sec:authorize`** trong header, footer.
 
 ### Thành viên làm giỏ hàng, đặt hàng, hóa đơn
 
-Trừ kho phải nằm **trong cùng giao dịch** với việc tạo hóa đơn: hết hàng thì hủy cả hóa đơn, không còn hóa đơn dở dang.
+Bảng đã có trong script: `GIO_HANG` (mỗi khách một giỏ), `CHI_TIET_GIO_HANG`, `DON_HANG` (trạng thái `CHO_XAC_NHAN`,
+`DA_XAC_NHAN`, `DANG_GIAO`, `HOAN_TAT`, `DA_HUY`), `CHI_TIET_DON_HANG`, `HOA_DON`, `CHI_TIET_HOA_DON`, và procedure
+`sp_XacNhanDonHang`. Việc cần làm: Entity, Repository, Service, Controller, giao diện cho các bảng này.
+
+- Cột `ThanhTien` là cột tính toán của SQL Server: ánh xạ chỉ đọc
+  `@Column(name = "ThanhTien", insertable = false, updatable = false) private BigDecimal thanhTien;`
+- Theo thiết kế của script, **trừ kho khi nhân viên xác nhận đơn** (khách đặt thì đơn ở trạng thái chờ xác nhận).
+  Trong Java, trừ kho bằng `TonKhoService` **trong cùng giao dịch** với việc đổi trạng thái đơn và tạo hóa đơn:
 
 ```java
 @Transactional
-public HoaDon datHang(Long taiKhoanId, Map<Long, Integer> soLuongTheoXe) {
-    tonKhoService.xuatKhoNhieuXe(soLuongTheoXe);   // khóa từng xe theo thứ tự mã tăng dần, trừ kho
-    HoaDon hoaDon = ...;                            // tạo hóa đơn và chi tiết hóa đơn
-    return hoaDonRepository.save(hoaDon);
+public HoaDon xacNhanDon(Integer maDonHang) {
+    DonHang don = entityManager.find(DonHang.class, maDonHang, LockModeType.PESSIMISTIC_WRITE); // khóa đơn: 2 người không cùng xác nhận 1 đơn
+    if (!"CHO_XAC_NHAN".equals(don.getTrangThai())) throw new NghiepVuException("Đơn không ở trạng thái chờ xác nhận.");
+    Map<Integer, Integer> soLuongTheoXe = ...;          // mã xe -> số lượng, lấy từ chi tiết đơn
+    tonKhoService.xuatKhoNhieuXe(soLuongTheoXe);         // khóa từng xe theo mã tăng dần; thiếu hàng -> HetHangException, hủy cả giao dịch
+    don.setTrangThai("DA_XAC_NHAN");
+    return taoHoaDon(don);                               // HOA_DON + CHI_TIET_HOA_DON
 }
 ```
 
-- Trong Controller, bắt `HetHangException` để báo lại cho khách: `e.getMessage()` đã là câu tiếng Việt
-  ("Xe ... chỉ còn 2 chiếc, không đủ số lượng yêu cầu (3).").
-- Hủy hóa đơn thì trả hàng về kho bằng `tonKhoService.nhapKho(...)`, cũng trong `@Transactional`.
-- Lấy khách đang đặt hàng bằng `@AuthenticationPrincipal TaiKhoanDetails` (mục 3).
+  Cách này dùng chung cơ chế khóa với client quản lý kho và có sẵn kiểm thử đồng thời. Gọi `sp_XacNhanDonHang` từ Java
+  cũng đúng (procedure khóa cùng các dòng bằng `UPDLOCK`), nhưng khi đó phần xử lý đồng thời nằm trong SQL thay vì Java.
+- Nhóm muốn trừ kho ngay lúc khách đặt thì gọi `xuatKhoNhieuXe` trong hàm đặt hàng thay cho hàm xác nhận.
+- Hủy đơn đã trừ kho: trả hàng bằng `tonKhoService.nhapKho(maXe, soLuong)`, cũng trong `@Transactional`.
+- Trong Controller, bắt `HetHangException` để báo lại: `e.getMessage()` đã là câu tiếng Việt
+  ("Xe "Ducati Monster" chỉ còn 2 chiếc, không đủ số lượng yêu cầu (3).").
+- Demo đồng thời cho buổi chấm: hai nhân viên cùng xác nhận hai đơn mua chiếc xe cuối cùng -> một đơn thành công, đơn còn lại
+  báo hết hàng; tồn kho không âm.
 
-### Thành viên làm giao diện trang chủ, danh sách xe, chi tiết xe
+### Thành viên làm phân tích, khách hàng
 
-- Thay nội dung `templates/index.html` bằng trang chủ thật theo quy chuẩn giao diện, giữ dòng `th:replace` bố cục chung.
-- Trang danh sách xe dùng thẻ `.the-xe` đã có sẵn trong `theme.css`; trang chi tiết xe theo mục Quy trình làm trang mới của quy chuẩn giao diện.
-- Muốn đổi màu, font hay kiểu thành phần: sửa quy chuẩn giao diện trước, rồi sửa biến ở đầu `static/css/theme.css`, để cả nhóm dùng chung.
-- **Giữ các thuộc tính `sec:authorize`** trong header, footer (đó là phần phân quyền hiển thị menu, hạng mục 3.5 của rubric).
+- Phần quản lý khách hàng đã ghép nhưng **viết lại khá nhiều** cho khớp bảng `KHACH_HANG` (xem báo cáo tích hợp mục 3):
+  đọc lại `KhachHang`, `KhachHangService`, `KhachHangController` để tự trình bày được khi chấm.
+- Còn thiếu tài liệu phân tích: bảng chức năng / use case (tối thiểu 10 chức năng, hạng mục 2.4), sơ đồ ERD từ script.
 
 ## 6. Xử lý lỗi
 
@@ -191,25 +206,25 @@ Ném đúng loại ngoại lệ, `GlobalExceptionHandler` sẽ hiển thị tran
 | Vi phạm quy tắc nghiệp vụ | `NghiepVuException` (trang 400 kèm thông báo) |
 | Lỗi của một ô nhập, cần hiện cạnh ô đó | `DuLieuKhongHopLeException("tenTruong", "thông báo")`, bắt trong Controller rồi `ketQua.rejectValue(...)` |
 
-Không bắt `Exception` chung chung trong `@ControllerAdvice`: làm vậy sẽ biến lỗi 403/404 thành lỗi 500.
+Không dùng `IllegalArgumentException` cho lỗi nghiệp vụ (sẽ thành lỗi 500), không bắt `Exception` chung chung trong
+`@ControllerAdvice` (sẽ biến lỗi 403/404 thành lỗi 500).
 
-## 7. Gộp script SQL của cả nhóm
+## 7. Script SQL và Entity
 
-File gộp cuối cùng phải **xóa bảng con trước, bảng cha sau** và **tạo bảng cha trước, bảng con sau**:
-
-```
-Xóa:  chi_tiet_hoa_don -> hoa_don -> gio_hang -> khach_hang -> xe_may -> hang_xe -> lich_su_dang_nhap -> tai_khoan -> vai_tro
-Tạo:  vai_tro -> tai_khoan -> lich_su_dang_nhap -> hang_xe -> xe_may -> khach_hang -> gio_hang -> hoa_don -> chi_tiet_hoa_don
-```
-
-Kiểm tra script có khớp với các Entity không: chạy ứng dụng với `spring.jpa.hibernate.ddl-auto=validate`.
-Nếu khởi động không lỗi thì Entity và script khớp nhau (phần đăng nhập - phân quyền đã kiểm tra như vậy trên SQL Server 2022).
+- Chỉ có **một** script: `database/QL_CUAHANG_XEMAY.sql`. Thêm bảng, cột thì sửa script này (bảng con xóa trước, tạo sau),
+  chạy lại trên máy mình rồi mới viết Entity.
+- Ứng dụng chạy với `spring.jpa.hibernate.ddl-auto=validate`: khởi động mà Entity lệch script (thiếu bảng, thiếu cột, sai kiểu)
+  thì báo lỗi ngay, ví dụ `Schema-validation: missing column [MaGioHang] in table [GIO_HANG]`. Khởi động được là Entity khớp script.
+- Dự án dùng chiến lược đặt tên **giữ nguyên** (`PhysicalNamingStrategyStandardImpl`). Mặc định của Spring Boot sẽ đổi
+  `@Column(name = "MaXe")` thành `ma_xe` và không tìm thấy cột; vì vậy mọi thuộc tính phải ghi tên cột đúng như script.
+- Cột `NVARCHAR` (tiếng Việt có dấu) thêm `@Nationalized`; cột `VARCHAR` (tên đăng nhập, email, trạng thái) thì không.
+- Kiểm thử tự động chạy trên H2 với `create-drop` (tự tạo bảng từ Entity), không cần script.
 
 ## 8. Làm việc với Git
 
-Rubric chấm cả lịch sử commit của **từng** thành viên (hạng mục 6.4), nên:
+Rubric chấm cả lịch sử commit của **từng** thành viên (hạng mục 6.4), nên mỗi người tự commit phần việc của mình:
 
-- Mỗi người làm trên nhánh riêng: `git switch -c xe-may`, `git switch -c gio-hang`...
+- Lấy code về: `git clone <địa chỉ repo của nhóm>`, rồi tạo nhánh riêng: `git switch -c gio-hang`, `git switch -c giao-dien`...
 - Commit nhỏ và thường xuyên (mỗi chức năng, mỗi lần sửa lỗi), lời nhắn tiếng Việt rõ ràng: `Thêm trang danh sách xe có phân trang`.
 - Trước khi gộp vào nhánh chính: `git pull` nhánh chính về, chạy `./mvnw -pl web test` thấy đạt hết rồi mới tạo Pull Request.
-- Không commit `target/`, `application-local.properties` (đã có trong `.gitignore`).
+- Không commit `target/`, `.idea/`, `application-local.properties` (đã có trong `.gitignore`).

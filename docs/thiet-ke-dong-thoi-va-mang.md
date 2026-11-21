@@ -19,7 +19,7 @@ flowchart LR
     end
     B["Trình duyệt"] -->|"HTTP :8080"| SEC
     CL["Client quản lý kho<br/>(chương trình riêng)"] -->|"TCP :9090"| SK
-    R -->|JDBC| DB[("SQL Server<br/>QuanLyXeMay")]
+    R -->|JDBC| DB[("SQL Server<br/>QL_CUAHANG_XEMAY")]
 ```
 
 Socket server chạy **bên trong** ứng dụng web nên dùng lại đúng các Service (cùng quy tắc nghiệp vụ, cùng khóa dữ liệu)
@@ -39,14 +39,14 @@ sequenceDiagram
     ND->>F: POST /dang-nhap (tenDangNhap, matKhau, _csrf)
     F->>F: Kiểm tra CSRF token
     F->>UDS: loadUserByUsername("admin")
-    UDS->>DB: SELECT ... FROM tai_khoan WHERE ten_dang_nhap = ?
+    UDS->>DB: SELECT ... FROM TAI_KHOAN WHERE TenDangNhap = ?
     DB-->>UDS: tài khoản + vai trò
     UDS-->>F: TaiKhoanDetails (có cờ bị khóa / tạm khóa)
     F->>F: So khớp mật khẩu với chuỗi băm BCrypt
     F->>H: Đăng nhập thành công
     H->>BG: ghiNhan(...) - @Async, trả về ngay
     H-->>ND: 302 chuyển tới /quan-tri (nhân sự) hoặc / (khách hàng)
-    BG->>DB: INSERT INTO lich_su_dang_nhap ...
+    BG->>DB: INSERT INTO LICH_SU_DANG_NHAP ...
 ```
 
 Nếu sai mật khẩu, `DangNhapThatBaiHandler` tăng bộ đếm lần sai (sai 5 lần thì tạm khóa 15 phút), cũng ghi nhật ký bằng
@@ -61,6 +61,7 @@ luồng nền, rồi chuyển về `/dang-nhap?loi=sai`.
 | Mỗi request HTTP | `http-nio-8080-exec-N` (Tomcat) | Nhiều khách đặt hàng, nhiều quản trị viên thao tác cùng lúc |
 | Mỗi client kết nối Socket | `kho-client-N` (thread pool của Socket server) | Nhiều nhân viên kho nhập/xuất cùng lúc |
 | Ghi nhật ký đăng nhập | `xemay-nen-N` (`@Async`) | Người dùng không phải chờ câu lệnh INSERT |
+| Gửi email chào mừng khách mới | `xemay-nen-N` (`@Async`, chạy sau khi giao dịch đã lưu) | Khách đăng ký không phải chờ máy chủ thư |
 | Quét tồn kho, dọn dữ liệu | `xemay-dinh-ky-N` (`@Scheduled`) | Chạy song song với các luồng phục vụ người dùng |
 
 Tên luồng được đặt trong `application.properties` (`spring.task.*`) và trong `KhoSocketServer`, nên khi demo
@@ -70,7 +71,9 @@ nhìn log là biết đoạn mã nào đang chạy trên luồng nào.
 
 | Tài nguyên dùng chung | Ai cùng truy cập | Nếu không đồng bộ | Cách đồng bộ |
 |---|---|---|---|
-| Cột `so_luong_ton` của bảng `xe_may` | Luồng Tomcat (đặt hàng), luồng `kho-client-N` (nhập/xuất kho) | Mất cập nhật, bán vượt số xe đang có | **Khóa bi quan JPA** `PESSIMISTIC_WRITE` (`TonKhoService`) |
+| Cột `SoLuong` của bảng `XE_MAY` | Luồng Tomcat (đặt hàng, nhập kho trên web), luồng `kho-client-N` (nhập/xuất kho), procedure `sp_XacNhanDonHang` | Mất cập nhật, bán vượt số xe đang có | **Khóa bi quan JPA** `PESSIMISTIC_WRITE` (`TonKhoService`) |
+| Cột `SoLuong` khi nhân viên sửa thông tin xe | Luồng sửa xe và luồng bán xe | Câu UPDATE của form sửa ghi lại số tồn cũ, xóa mất lần bán xen giữa | Form sửa không nhận số lượng + `@DynamicUpdate`: UPDATE chỉ ghi cột đã đổi (mục 3.4) |
+| Số điện thoại khách hàng | Hai người đăng ký, hoặc nhân viên nhập khách, cùng một số điện thoại | Hai hồ sơ trùng số | Chỉ mục `UNIQUE` của `KHACH_HANG.SoDienThoai` + bắt `DataIntegrityViolationException`; tài khoản và hồ sơ cùng một giao dịch |
 | Bộ đếm đăng nhập sai (bộ nhớ) | Luồng Tomcat và luồng Socket cùng ghi nhận lần sai | Mất lần đếm, kẻ dò mật khẩu thử được nhiều hơn 5 lần | `ConcurrentHashMap.compute` - đọc, tính, ghi là **nguyên tử** (`BoDemDangNhapSai`) |
 | Tên đăng nhập, email | Hai người đăng ký cùng một tên cùng lúc | Hai tài khoản trùng tên | Ràng buộc `UNIQUE` trong CSDL + bắt `DataIntegrityViolationException` (`TaiKhoanService`) |
 | Số client đang phục vụ, tổng số kết nối | Các luồng `kho-client-N` | Thống kê sai | `AtomicInteger`, `AtomicLong`; tập kết nối dùng `ConcurrentHashMap.newKeySet()` |
@@ -81,12 +84,15 @@ nhìn log là biết đoạn mã nào đang chạy trên luồng nào.
 Thao tác trừ kho có 3 bước: **đọc** số tồn, **kiểm tra** đủ hàng, **ghi** số mới. Không khóa thì hai giao dịch có thể
 xen kẽ: cùng đọc 1, cùng thấy đủ hàng, cùng ghi 0, tức là bán 2 xe trong khi kho chỉ có 1.
 
-`TonKhoService.xuatKho` khóa dòng của xe **trước khi đọc**. Trên SQL Server, Hibernate sinh câu lệnh:
+`TonKhoService.xuatKho` khóa dòng của xe **trước khi đọc**. Trên SQL Server, Hibernate sinh câu lệnh (lấy từ log thật):
 
 ```sql
-select xm1_0.id, xm1_0.gia_ban, xm1_0.so_luong_ton, xm1_0.ten_xe
-from xe_may xm1_0 with (updlock, holdlock, rowlock)
-where xm1_0.id = ?
+select xm1_0.MaXe,xm1_0.GiaBan,xm1_0.MaHang,xm1_0.HinhAnh,xm1_0.LoaiXe,xm1_0.MauSac,xm1_0.MoTa,
+       xm1_0.NgayTao,xm1_0.PhanKhoi,xm1_0.SoLuong,xm1_0.TenXe,xm1_0.TrangThai
+from XE_MAY xm1_0 with (updlock,holdlock,rowlock)
+where xm1_0.MaXe=?
+-- ... kiểm tra đủ hàng, rồi khi commit:
+update XE_MAY set SoLuong=? where MaXe=?
 ```
 
 Khóa được giữ đến khi giao dịch kết thúc (commit hoặc rollback). Giao dịch thứ hai muốn khóa cùng dòng phải chờ,
@@ -101,7 +107,7 @@ sequenceDiagram
     B->>DB: SELECT ... WITH (UPDLOCK)
     Note over B: phải CHỜ vì A đang giữ khóa
     A->>A: đọc 1 >= 1, đủ hàng
-    A->>DB: UPDATE so_luong_ton = 0, COMMIT - nhả khóa
+    A->>DB: UPDATE SoLuong = 0, COMMIT - nhả khóa
     DB-->>B: được khóa, đọc số MỚI: 0
     B->>B: 0 < 1, ném HetHangException, ROLLBACK
 ```
@@ -110,13 +116,39 @@ sequenceDiagram
 xe 1 rồi chờ xe 2, trong khi đơn B khóa xe 2 rồi chờ xe 1, hai bên sẽ chờ nhau mãi; khi mọi giao dịch khóa theo cùng một
 thứ tự thì vòng chờ này không thể xảy ra. Bài kiểm thử `xuatNhieuXeKhongDeadlock` chứng minh điều đó.
 
-**Chốt chặn cuối:** cột `so_luong_ton` có ràng buộc `CHECK (so_luong_ton >= 0)` trong CSDL.
+**Chốt chặn cuối:** cột `SoLuong` có ràng buộc `CK_XEMAY_SOLUONG CHECK(SoLuong >= 0)` trong script của nhóm.
 
-### 3.4 Tác vụ nền và tác vụ định kỳ
+**Procedure của nhóm cũng an toàn khi chạy song song:** `sp_XacNhanDonHang` đọc các dòng `XE_MAY` của đơn bằng
+`WITH(UPDLOCK,HOLDLOCK)`, cùng loại khóa mà Hibernate dùng ở trên, nên một lần trừ kho từ Java và một lần xác nhận đơn
+bằng procedure trên cùng một xe sẽ chờ nhau chứ không chạy xen kẽ.
+
+### 3.4 Sửa thông tin xe trong lúc có người mua (lỗi phát hiện khi tích hợp)
+
+Form sửa xe của phần quản lý xe máy ban đầu gán lại `SoLuong` lấy từ form. Bỏ dòng đó vẫn **chưa đủ**: mặc định Hibernate
+sinh câu UPDATE ghi lại **mọi** cột của đối tượng, kể cả `SoLuong` đã đọc từ lúc mở form.
+
+```mermaid
+sequenceDiagram
+    participant S as Nhân viên sửa giá xe
+    participant DB as Dòng của xe (còn 50)
+    participant K as Khách mua 1 xe
+    S->>DB: đọc xe: SoLuong = 50 (Hibernate nhớ trong bộ nhớ)
+    K->>DB: xuatKho: khóa dòng, 50 -> 49, COMMIT
+    S->>DB: lưu form: UPDATE ... GiaBan=?, SoLuong=50, ... (mặc định ghi mọi cột)
+    Note over DB: SoLuong = 50: lần bán của khách biến mất
+```
+
+Cách sửa: thêm `@DynamicUpdate` cho Entity `XeMay`. Hibernate so sánh với lúc đọc và chỉ ghi các cột đã đổi; log thật khi
+nhân viên đổi giá xe là `update XE_MAY set GiaBan=? where MaXe=?`, không còn đụng tới `SoLuong`. Bài kiểm thử
+`suaXeTrongLucCoNguoiMua` tái hiện đúng trình tự trên: có `@DynamicUpdate` thì còn 49 (đúng), bỏ đi thì còn 50 (sai).
+Muốn tăng tồn kho thì dùng nút **Nhập kho** trên trang sửa xe, đi qua `TonKhoService` như mọi thao tác kho khác.
+
+### 3.5 Tác vụ nền và tác vụ định kỳ
 
 | Tác vụ | Cơ chế | Lịch chạy | Lớp |
 |---|---|---|---|
 | Ghi nhật ký đăng nhập | `@Async` | Mỗi lần đăng nhập (web và Socket) | `LichSuDangNhapService.ghiNhan` |
+| Gửi email chào mừng khách mới (giả lập) | `@Async` + `@TransactionalEventListener(AFTER_COMMIT)` | Mỗi khi có hồ sơ khách hàng mới, sau khi giao dịch đã lưu | `GuiEmailService.guiEmailChaoMung` |
 | Quét xe sắp hết hàng (còn ≤ 3 xe), hiện trên trang Quản trị | `@Scheduled(fixedDelay)` | Mỗi 60 giây | `TacVuDinhKy.quetTonKho` |
 | Dọn bộ đếm đăng nhập sai đã hết hạn | `@Scheduled(fixedDelay)` | Mỗi 5 phút | `TacVuDinhKy.donBoDemDangNhapSai` |
 | Xóa nhật ký đăng nhập cũ hơn 90 ngày | `@Scheduled(cron)` | 02:00 hằng ngày | `TacVuDinhKy.donLichSuDangNhapCu` |
@@ -126,8 +158,12 @@ Log thật khi đăng nhập (luồng xử lý request giao việc cho luồng n
 ```
 [http-nio-8080-exec-3] Đăng nhập thành công: 'admin' qua WEB [luồng xử lý: http-nio-8080-exec-3] -> giao việc ghi lịch sử cho luồng nền
 [    xemay-nen-1] Đã ghi lịch sử đăng nhập (thành công) qua WEB [luồng nền: xemay-nen-1]
-[xemay-dinh-ky-1] CẢNH BÁO TỒN KHO: 3 xe còn từ 3 chiếc trở xuống: Piaggio Vespa Sprint 125 (còn 1), ...
+[    xemay-nen-1] Đã gửi email chào mừng tới Lê Thị Khách Mới <khachmoi01@gmail.com> [luồng: xemay-nen-1]
+[xemay-dinh-ky-1] CẢNH BÁO TỒN KHO: 2 xe còn từ 3 chiếc trở xuống: Ducati Monster (còn 2), Triumph Trident 660 (còn 3) [luồng: xemay-dinh-ky-1]
 ```
+
+Email chào mừng chỉ được gửi **sau khi** giao dịch tạo khách hàng đã lưu xong: nếu giao dịch bị hủy (ví dụ trùng số điện thoại)
+thì không có thư nào được gửi cho một khách hàng không tồn tại.
 
 ## 4. Phần lập trình mạng
 
@@ -163,7 +199,7 @@ Dạng văn bản, mã hóa UTF-8, mỗi thông điệp là một dòng. Client 
 | Lệnh | Ý nghĩa | Dữ liệu trả về khi thành công |
 |---|---|---|
 | `DANGNHAP <tên> <mật khẩu>` | Đăng nhập (chỉ quản trị viên, nhân viên) | `họ tên\|vai trò` |
-| `DSXE [từ khóa]` | Danh sách xe (lọc theo tên) | mỗi xe một dòng: `mã\|tên xe\|giá bán\|tồn kho` |
+| `DSXE [từ khóa]` | Danh sách xe (lọc theo tên xe hoặc tên hãng) | mỗi xe một dòng: `mã\|hãng và tên xe\|giá bán\|tồn kho` |
 | `TONKHO <mã xe>` | Xem tồn kho một xe | `mã\|tên xe\|giá bán\|tồn kho` |
 | `NHAPKHO <mã xe> <số lượng>` | Cộng tồn kho | thông tin xe sau khi cộng |
 | `XUATKHO <mã xe> <số lượng>` | Trừ tồn kho | thông tin xe sau khi trừ |
@@ -185,14 +221,20 @@ Ví dụ một phiên làm việc (`>` client gửi, `<` server trả lời):
 ```
 < OK 1
 < XEMAY-KHO/1.0 - Hãy đăng nhập: DANGNHAP <tên đăng nhập> <mật khẩu>
-> DANGNHAP nhanvien 123456
+> DANGNHAP nhanvien1 123456
 < OK 1
-< Nhân viên bán hàng|NHANVIEN
-> XUATKHO 4 5
-< ERR 409 Xe "Honda Winner X" chỉ còn 3 chiếc, không đủ số lượng yêu cầu (5).
-> XUATKHO 4 1
+< Lê Văn Hùng|NHANVIEN
+> DSXE ducati
 < OK 1
-< 4|Honda Winner X|46160000|2
+< 15|Ducati Monster|400000000|2
+> XUATKHO 15 5
+< ERR 409 Xe "Ducati Monster" chỉ còn 2 chiếc, không đủ số lượng yêu cầu (5).
+> XUATKHO 15 1
+< OK 1
+< 15|Ducati Monster|400000000|1
+> NHAPKHO 15 1
+< OK 1
+< 15|Ducati Monster|400000000|2
 > THOAT
 < OK 0
 ```
