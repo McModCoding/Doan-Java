@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<!--/* Danh sách hãng xe (quản trị) - giao diện cho phần quản lý hãng xe của thành viên phụ trách xe máy, hãng xe. */-->
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:replace="~{fragments/layout :: trang(~{::title}, ~{::section})}">
+<head><title th:text="'Quản lý hãng xe | ' + #{cuahang.ten}">Quản lý hãng xe | Web Xe Máy</title></head>
+<body>
+<section>
+    <div class="dau-trang mb-3">
+        <div>
+            <h1>Quản lý hãng xe</h1>
+            <p class="dau-trang-mo-ta" th:text="|${#lists.size(dsHangXe)} hãng xe|">20 hãng xe</p>
+        </div>
+        <a class="btn btn-primary" th:href="@{/quan-tri/hang-xe/them}"><i class="bi bi-plus-lg" aria-hidden="true"></i>Thêm hãng xe</a>
+    </div>
+    <div th:replace="~{fragments/quan-tri :: menu}"></div>
+
+    <form class="row g-2 mb-4" method="get" th:action="@{/quan-tri/hang-xe}" role="search">
+        <div class="col-md-6 col-lg-5">
+            <label for="tenHang" class="visually-hidden">Tên hãng</label>
+            <input type="search" id="tenHang" name="tenHang" th:value="${tenHang}" class="form-control"
+                   placeholder="Tên hãng, ví dụ Honda" maxlength="100">
+        </div>
+        <div class="col-md-6 col-lg-4 d-flex gap-2">
+            <button type="submit" class="btn btn-outline-secondary"><i class="bi bi-search" aria-hidden="true"></i>Tìm</button>
+            <a class="btn btn-outline-secondary" th:href="@{/quan-tri/hang-xe}" th:if="${!#strings.isEmpty(tenHang)}">Bỏ lọc</a>
+        </div>
+    </form>
+
+    <div class="bang-khung">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle bang-co-thao-tac">
+                <thead>
+                <tr>
+                    <th class="d-none d-sm-table-cell">Mã</th>
+                    <th>Hãng xe</th>
+                    <th class="d-none d-md-table-cell">Quốc gia</th>
+                    <th class="text-end">Số mẫu xe</th>
+                    <th class="d-none d-sm-table-cell">Trạng thái</th>
+                    <th class="text-end"><span class="visually-hidden">Thao tác</span></th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:if="${#lists.isEmpty(dsHangXe)}">
+                    <td colspan="6" class="text-center chu-phu py-5">Không tìm thấy hãng xe nào.</td>
+                </tr>
+                <tr th:each="hang : ${dsHangXe}" th:with="soXe=${soXeTheoHang.get(hang.maHang) ?: 0}">
+                    <td class="d-none d-sm-table-cell so chu-phu" th:text="${hang.maHang}">1</td>
+                    <td>
+                        <span class="o-chinh" th:text="${hang.tenHang}">Honda</span>
+                        <div class="chu-phu chu-nho" th:if="${hang.moTa}" th:text="${hang.moTa}">Hãng xe Nhật Bản</div>
+                        <div class="d-md-none chu-phu chu-nho" th:if="${hang.quocGia}" th:text="${hang.quocGia}">Nhật Bản</div>
+                    </td>
+                    <td class="d-none d-md-table-cell" th:text="${hang.quocGia}">Nhật Bản</td>
+                    <td class="text-end so">
+                        <a th:if="${soXe > 0}" th:href="@{/quan-tri/xe-may(maHang=${hang.maHang})}" th:text="${soXe}"
+                           th:title="|Xem các xe của hãng ${hang.tenHang}|">4</a>
+                        <span th:unless="${soXe > 0}" class="chu-phu">0</span>
+                    </td>
+                    <td class="d-none d-sm-table-cell">
+                        <span th:if="${hang.trangThai}" class="nhan nhan-thanh-cong">Hoạt động</span>
+                        <span th:unless="${hang.trangThai}" class="nhan nhan-trung-tinh">Ngừng hoạt động</span>
+                    </td>
+                    <td class="text-end">
+                        <div class="thao-tac">
+                            <a class="btn btn-icon" th:href="@{/quan-tri/hang-xe/{id}/sua(id=${hang.maHang})}"
+                               title="Sửa" aria-label="Sửa"><i class="bi bi-pencil" aria-hidden="true"></i></a>
+                            <!-- Hãng còn xe thì không ngừng hoạt động được (quy tắc của HangXeService) nên ẩn nút -->
+                            <form sec:authorize="hasRole('ADMIN')" th:if="${hang.trangThai and soXe == 0}" method="post"
+                                  th:action="@{/quan-tri/hang-xe/{id}/ngung(id=${hang.maHang})}"
+                                  th:data-xac-nhan="|Ngừng hoạt động hãng ${hang.tenHang}? Hãng sẽ không xuất hiện khi thêm xe mới.|"
+                                  data-nut-xac-nhan="Ngừng hoạt động">
+                                <button type="submit" class="btn btn-icon nguy-hiem" title="Ngừng hoạt động" aria-label="Ngừng hoạt động">
+                                    <i class="bi bi-slash-circle" aria-hidden="true"></i></button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+</body>
+</html>

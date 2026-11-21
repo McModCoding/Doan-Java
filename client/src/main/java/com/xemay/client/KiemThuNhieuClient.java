@@ -32,7 +32,7 @@ public class KiemThuNhieuClient {
     public static void main(String[] args) throws Exception {
         String mayChu = thamSo(args, 0, "localhost");
         int cong = Integer.parseInt(thamSo(args, 1, "9090"));
-        String ten = thamSo(args, 2, "nhanvien");
+        String ten = thamSo(args, 2, "nhanvien1");
         String matKhau = thamSo(args, 3, "123456");
         long maXe = Long.parseLong(thamSo(args, 4, "1"));
         int soClient = Integer.parseInt(thamSo(args, 5, "5"));

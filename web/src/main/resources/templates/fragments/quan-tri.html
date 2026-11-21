@@ -4,19 +4,15 @@
 <!--/*
     THANH MỤC của khu vực quản trị, đặt ở đầu mỗi trang quản trị:
       <div th:replace="~{fragments/quan-tri :: menu}"></div>
-    Các thành viên bỏ chú thích mục của mình khi trang tương ứng đã làm xong.
+    Thành viên phụ trách hóa đơn bỏ chú thích mục của mình khi trang tương ứng đã làm xong.
 */-->
 <nav th:fragment="menu" aria-label="Mục quản trị">
     <div class="tab-quan-tri nav">
         <a class="nav-link" th:href="@{/quan-tri}"
            th:classappend="${@duongDan.laTrang('/quan-tri')} ? 'active'">Tổng quan</a>
-        <!--/* Thành viên phụ trách xe máy, hãng xe:
         <a class="nav-link" th:href="@{/quan-tri/xe-may}" th:classappend="${@duongDan.dangO('/quan-tri/xe-may')} ? 'active'">Xe máy</a>
         <a class="nav-link" th:href="@{/quan-tri/hang-xe}" th:classappend="${@duongDan.dangO('/quan-tri/hang-xe')} ? 'active'">Hãng xe</a>
-        */-->
-        <!--/* Thành viên phụ trách khách hàng:
         <a class="nav-link" th:href="@{/quan-tri/khach-hang}" th:classappend="${@duongDan.dangO('/quan-tri/khach-hang')} ? 'active'">Khách hàng</a>
-        */-->
         <!--/* Thành viên phụ trách hóa đơn:
         <a class="nav-link" th:href="@{/quan-tri/hoa-don}" th:classappend="${@duongDan.dangO('/quan-tri/hoa-don')} ? 'active'">Hóa đơn</a>
         */-->

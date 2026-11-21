@@ -48,7 +48,7 @@ class TonKhoDongThoiTest extends KiemThuTichHop {
         chayDongThoi(soLuong, () -> {
             tenCacLuong.add(Thread.currentThread().getName());
             try {
-                tonKhoService.xuatKho(xe.getId(), 1);
+                tonKhoService.xuatKho(xe.getMaXe(), 1);
                 thanhCong.incrementAndGet();
             } catch (HetHangException e) {
                 hetHang.incrementAndGet();
@@ -56,11 +56,11 @@ class TonKhoDongThoiTest extends KiemThuTichHop {
         });
 
         log.info("CÓ KHÓA   : {} luồng mua, thành công {}, hết hàng {}, tồn kho cuối {} (đúng phải là 0)",
-                soLuong, thanhCong.get(), hetHang.get(), tonKho(xe.getId()));
+                soLuong, thanhCong.get(), hetHang.get(), tonKho(xe.getMaXe()));
         assertThat(tenCacLuong).hasSize(soLuong);   // thật sự chạy trên 20 luồng khác nhau
         assertThat(thanhCong.get()).isEqualTo(10);
         assertThat(hetHang.get()).isEqualTo(10);
-        assertThat(tonKho(xe.getId())).isZero();
+        assertThat(tonKho(xe.getMaXe())).isZero();
     }
 
     @Test
@@ -73,16 +73,16 @@ class TonKhoDongThoiTest extends KiemThuTichHop {
         CyclicBarrier docXongHet = new CyclicBarrier(soLuong);
 
         chayDongThoi(soLuong, () -> {
-            XeMay banDoc = xeMayRepository.findById(xe.getId()).orElseThrow();   // (1) đọc, KHÔNG khóa
+            XeMay banDoc = xeMayRepository.findById(xe.getMaXe()).orElseThrow();   // (1) đọc, KHÔNG khóa
             docXongHet.await(10, TimeUnit.SECONDS);
-            if (banDoc.getSoLuongTon() >= 1) {                                     // (2) kiểm tra trên dữ liệu cũ
-                banDoc.setSoLuongTon(banDoc.getSoLuongTon() - 1);
+            if (banDoc.getSoLuong() >= 1) {                                        // (2) kiểm tra trên dữ liệu cũ
+                banDoc.setSoLuong(banDoc.getSoLuong() - 1);
                 xeMayRepository.save(banDoc);                                      // (3) ghi đè lên nhau
                 thanhCong.incrementAndGet();
             }
         });
 
-        int tonCuoi = tonKho(xe.getId());
+        int tonCuoi = tonKho(xe.getMaXe());
         log.info("KHÔNG KHÓA: {} luồng mua, thành công {}, tồn kho cuối {} -> bán vượt {} xe, mất {} lần cập nhật",
                 soLuong, thanhCong.get(), tonCuoi, thanhCong.get() - 10, thanhCong.get() - (10 - tonCuoi));
         // Đây là LỖI mà TonKhoService ngăn chặn: 20 khách đều mua được trong khi kho chỉ có 10 xe
@@ -98,13 +98,13 @@ class TonKhoDongThoiTest extends KiemThuTichHop {
 
         chayDongThoi(50, () -> {
             if (soLuot.incrementAndGet() % 2 == 0) {
-                tonKhoService.nhapKho(xe.getId(), 1);
+                tonKhoService.nhapKho(xe.getMaXe(), 1);
             } else {
-                tonKhoService.xuatKho(xe.getId(), 1);
+                tonKhoService.xuatKho(xe.getMaXe(), 1);
             }
         });
 
-        assertThat(tonKho(xe.getId())).isEqualTo(50);
+        assertThat(tonKho(xe.getMaXe())).isEqualTo(50);
     }
 
     @Test
@@ -118,20 +118,20 @@ class TonKhoDongThoiTest extends KiemThuTichHop {
         chayDongThoi(20, () -> {
             boolean aTruoc = soLuot.incrementAndGet() % 2 == 0;
             for (int lan = 0; lan < 5; lan++) {
-                Map<Long, Integer> donHang = new LinkedHashMap<>();
+                Map<Integer, Integer> donHang = new LinkedHashMap<>();
                 if (aTruoc) {
-                    donHang.put(xeA.getId(), 1);
-                    donHang.put(xeB.getId(), 1);
+                    donHang.put(xeA.getMaXe(), 1);
+                    donHang.put(xeB.getMaXe(), 1);
                 } else {
-                    donHang.put(xeB.getId(), 1);
-                    donHang.put(xeA.getId(), 1);
+                    donHang.put(xeB.getMaXe(), 1);
+                    donHang.put(xeA.getMaXe(), 1);
                 }
                 tonKhoService.xuatKhoNhieuXe(donHang);
             }
         });
 
-        assertThat(tonKho(xeA.getId())).isZero();
-        assertThat(tonKho(xeB.getId())).isZero();
+        assertThat(tonKho(xeA.getMaXe())).isZero();
+        assertThat(tonKho(xeB.getMaXe())).isZero();
     }
 
     @Test
@@ -139,26 +139,26 @@ class TonKhoDongThoiTest extends KiemThuTichHop {
     void xuatNhieuXeThieuHangThiHuyCaDon() {
         XeMay xeDu = taoXe(5);
         XeMay xeThieu = taoXe(1);
-        Map<Long, Integer> donHang = new LinkedHashMap<>();
-        donHang.put(xeDu.getId(), 2);
-        donHang.put(xeThieu.getId(), 3);
+        Map<Integer, Integer> donHang = new LinkedHashMap<>();
+        donHang.put(xeDu.getMaXe(), 2);
+        donHang.put(xeThieu.getMaXe(), 3);
 
         assertThatThrownBy(() -> tonKhoService.xuatKhoNhieuXe(donHang)).isInstanceOf(HetHangException.class);
-        assertThat(tonKho(xeDu.getId())).isEqualTo(5);
-        assertThat(tonKho(xeThieu.getId())).isEqualTo(1);
+        assertThat(tonKho(xeDu.getMaXe())).isEqualTo(5);
+        assertThat(tonKho(xeThieu.getMaXe())).isEqualTo(1);
     }
 
     @Test
     @DisplayName("Kiểm tra dữ liệu: số lượng không hợp lệ, xe không tồn tại, không đủ hàng")
     void kiemTraDuLieu() {
         XeMay xe = taoXe(3);
-        assertThatThrownBy(() -> tonKhoService.xuatKho(xe.getId(), 0)).isInstanceOf(NghiepVuException.class);
-        assertThatThrownBy(() -> tonKhoService.nhapKho(xe.getId(), -5)).isInstanceOf(NghiepVuException.class);
-        assertThatThrownBy(() -> tonKhoService.xuatKho(999_999L, 1)).isInstanceOf(KhongTimThayException.class);
-        assertThatThrownBy(() -> tonKhoService.xuatKho(xe.getId(), 4))
+        assertThatThrownBy(() -> tonKhoService.xuatKho(xe.getMaXe(), 0)).isInstanceOf(NghiepVuException.class);
+        assertThatThrownBy(() -> tonKhoService.nhapKho(xe.getMaXe(), -5)).isInstanceOf(NghiepVuException.class);
+        assertThatThrownBy(() -> tonKhoService.xuatKho(999_999, 1)).isInstanceOf(KhongTimThayException.class);
+        assertThatThrownBy(() -> tonKhoService.xuatKho(xe.getMaXe(), 4))
                 .isInstanceOf(HetHangException.class)
                 .hasMessageContaining("chỉ còn 3 chiếc");
-        assertThat(tonKho(xe.getId())).isEqualTo(3);
+        assertThat(tonKho(xe.getMaXe())).isEqualTo(3);
     }
 
     @Test
@@ -166,7 +166,7 @@ class TonKhoDongThoiTest extends KiemThuTichHop {
     void quetXeSapHetHang() {
         XeMay xe = taoXe(0);
         assertThat(tonKhoService.quetXeSapHetHang().danhSach())
-                .anySatisfy(muc -> assertThat(muc.id()).isEqualTo(xe.getId()));
+                .anySatisfy(muc -> assertThat(muc.id()).isEqualTo(xe.getMaXe()));
         assertThat(tonKhoService.getCanhBaoGanNhat().thoiDiemQuet()).isNotNull();
     }
 

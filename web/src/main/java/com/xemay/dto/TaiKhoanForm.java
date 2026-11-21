@@ -18,7 +18,7 @@ public class TaiKhoanForm {
     public interface KhiThem {
     }
 
-    private Long id;
+    private Integer id;
 
     @NotNull(message = QuyTacNhap.TEN_DANG_NHAP_SAI, groups = KhiThem.class)
     @Pattern(regexp = QuyTacNhap.TEN_DANG_NHAP, message = QuyTacNhap.TEN_DANG_NHAP_SAI, groups = KhiThem.class)
@@ -45,11 +45,11 @@ public class TaiKhoanForm {
 
     private boolean kichHoat = true;
 
-    public Long getId() {
+    public Integer getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(Integer id) {
         this.id = id;
     }
 

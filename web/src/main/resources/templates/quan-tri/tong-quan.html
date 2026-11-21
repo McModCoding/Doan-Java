@@ -16,16 +16,16 @@
     <div class="row g-3 mb-5">
         <div class="col-6 col-xl-3">
             <div class="so-lieu">
-                <div class="so-lieu-nhan">Tài khoản</div>
-                <div class="so-lieu-gia-tri" th:text="${soTaiKhoan}">0</div>
-                <div class="so-lieu-phu">Gồm quản trị viên, nhân viên và khách hàng</div>
+                <div class="so-lieu-nhan">Mẫu xe đang bán</div>
+                <div class="so-lieu-gia-tri" th:text="${soXeDangBan}">0</div>
+                <div class="so-lieu-phu"><a th:href="@{/quan-tri/xe-may(trangThai=true)}">Xem danh sách xe</a></div>
             </div>
         </div>
         <div class="col-6 col-xl-3">
             <div class="so-lieu">
                 <div class="so-lieu-nhan">Khách hàng</div>
                 <div class="so-lieu-gia-tri" th:text="${soKhachHang}">0</div>
-                <div class="so-lieu-phu">Tài khoản có vai trò khách hàng</div>
+                <div class="so-lieu-phu">Khách đăng ký trên web và khách mua tại cửa hàng</div>
             </div>
         </div>
         <div class="col-6 col-xl-3">
@@ -67,7 +67,8 @@
                         <tbody>
                         <tr th:each="muc : ${canhBaoTonKho.danhSach}">
                             <td class="d-none d-sm-table-cell so chu-phu" th:text="${muc.id}">1</td>
-                            <td class="o-chinh" th:text="${muc.tenXe}">Tên xe</td>
+                            <td><a class="o-chinh" th:href="@{/quan-tri/xe-may/{id}/sua(id=${muc.id})}" th:text="${muc.tenXe}"
+                                   th:title="|Nhập thêm xe ${muc.tenXe}|">Tên xe</a></td>
                             <td class="text-end">
                                 <span th:if="${muc.soLuongTon == 0}" class="nhan nhan-loi">Hết hàng</span>
                                 <span th:unless="${muc.soLuongTon == 0}" class="nhan nhan-canh-bao so" th:text="|Còn ${muc.soLuongTon}|">Còn 1</span>

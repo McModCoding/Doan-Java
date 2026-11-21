@@ -229,6 +229,7 @@ p, li, dd, .form-text, .so-lieu-phu { text-wrap: pretty; }
 }
 .input-group > .btn { min-height: 44px; }
 .input-group > .btn-outline-secondary { border-color: var(--xm-hairline-strong); }
+.input-group-text { background: var(--xm-surface-soft); border-color: var(--xm-hairline-strong); color: var(--xm-muted); }
 
 /* ---------- 5. Thanh thông tin + menu chính ---------- */
 .thanh-thong-tin {
@@ -415,6 +416,7 @@ p, li, dd, .form-text, .so-lieu-phu { text-wrap: pretty; }
 .nhan-do { background: var(--xm-primary-soft); color: var(--xm-primary-active); }
 .nhan-dam { background: var(--xm-ink); color: #fff; }
 .nhan-vien { background: #fff; color: var(--xm-body); box-shadow: inset 0 0 0 1px var(--xm-hairline-strong); }
+.nhan-trung-tinh { background: var(--xm-surface-strong); color: var(--xm-body); }
 
 /* ---------- 9. Bảng ---------- */
 .table {

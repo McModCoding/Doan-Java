@@ -86,13 +86,13 @@ class KhoSocketServerTest extends KiemThuTichHop {
     @DisplayName("Nhân viên: xem, nhập, xuất kho; xử lý lỗi cú pháp, không tìm thấy, không đủ hàng")
     void nhanVienQuanLyKho() throws IOException {
         XeMay xe = taoXe(5);
-        long id = xe.getId();
+        int id = xe.getMaXe();
         try (KetNoiThu kn = new KetNoiThu(server.getCong())) {
             assertThat(kn.gui("DANGNHAP nhanvien 123456")).containsExactly("OK 1", "Nhân viên bán hàng|NHANVIEN");
 
-            assertThat(kn.gui("TONKHO " + id)).containsExactly("OK 1", id + "|" + xe.getTenXe() + "|30000000|5");
-            assertThat(kn.gui("xuatkho " + id + " 2")).containsExactly("OK 1", id + "|" + xe.getTenXe() + "|30000000|3");
-            assertThat(kn.gui("NHAPKHO " + id + " 10")).containsExactly("OK 1", id + "|" + xe.getTenXe() + "|30000000|13");
+            assertThat(kn.gui("TONKHO " + id)).containsExactly("OK 1", id + "|" + xe.getTenDayDu() + "|30000000|5");
+            assertThat(kn.gui("xuatkho " + id + " 2")).containsExactly("OK 1", id + "|" + xe.getTenDayDu() + "|30000000|3");
+            assertThat(kn.gui("NHAPKHO " + id + " 10")).containsExactly("OK 1", id + "|" + xe.getTenDayDu() + "|30000000|13");
 
             assertThat(kn.gui("XUATKHO " + id + " 100")).first().asString().startsWith("ERR 409");
             assertThat(kn.gui("TONKHO 999999")).first().asString().startsWith("ERR 404");
@@ -125,7 +125,7 @@ class KhoSocketServerTest extends KiemThuTichHop {
                     assertThat(kn.gui("DANGNHAP nhanvien 123456")).first().isEqualTo("OK 1");
                     xuatPhat.await();
                     for (int lan = 0; lan < soLanMoiClient; lan++) {
-                        String dau = kn.gui("XUATKHO " + xe.getId() + " 1").get(0);
+                        String dau = kn.gui("XUATKHO " + xe.getMaXe() + " 1").get(0);
                         if (dau.startsWith("OK")) {
                             thanhCong.incrementAndGet();
                         } else if (dau.startsWith("ERR 409")) {
@@ -144,7 +144,7 @@ class KhoSocketServerTest extends KiemThuTichHop {
 
         assertThat(thanhCong.get()).isEqualTo(12);
         assertThat(hetHang.get()).isEqualTo(3);
-        assertThat(tonKho(xe.getId())).isZero();
+        assertThat(tonKho(xe.getMaXe())).isZero();
     }
 
     @Test

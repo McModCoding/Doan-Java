@@ -11,6 +11,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import org.hibernate.annotations.Nationalized;
 
 import java.time.LocalDateTime;
 import java.util.Locale;
@@ -18,48 +19,52 @@ import java.util.Locale;
 /**
  * Tài khoản đăng nhập của mọi người dùng (quản trị viên, nhân viên, khách hàng).
  *
- * <p>Bảng này chỉ giữ thông tin phục vụ ĐĂNG NHẬP và PHÂN QUYỀN. Thông tin riêng của khách hàng
- * (địa chỉ giao hàng, ngày sinh...) nằm ở bảng khách hàng và tham chiếu về đây qua {@code tai_khoan_id}.
+ * <p>Bảng {@code TAI_KHOAN} chỉ giữ thông tin phục vụ ĐĂNG NHẬP và PHÂN QUYỀN. Thông tin riêng của khách hàng
+ * (địa chỉ giao hàng, ngày sinh...) nằm ở bảng {@code KHACH_HANG} và tham chiếu về đây qua cột {@code MaTaiKhoan}.
+ *
+ * <p>Tên bảng, tên cột theo script chung {@code database/QL_CUAHANG_XEMAY.sql}. Ứng dụng dùng chiến lược đặt tên
+ * "giữ nguyên" nên MỖI thuộc tính phải ghi rõ {@code @Column(name = ...)}.
  */
 @Entity
-// Tên ràng buộc đặt giống hệt trong script database/01_tai_khoan_phan_quyen.sql
-@Table(name = "tai_khoan", uniqueConstraints = {
-        @UniqueConstraint(name = "UQ_tai_khoan_ten_dang_nhap", columnNames = "ten_dang_nhap"),
-        @UniqueConstraint(name = "UQ_tai_khoan_email", columnNames = "email")
+@Table(name = "TAI_KHOAN", uniqueConstraints = {
+        @UniqueConstraint(name = "UQ_TAIKHOAN_TENDANGNHAP", columnNames = "TenDangNhap"),
+        @UniqueConstraint(name = "UQ_TAIKHOAN_EMAIL", columnNames = "Email")
 })
 public class TaiKhoan {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Column(name = "MaTaiKhoan")
+    private Integer id;
 
     /** Luôn lưu ở dạng chữ thường để việc so sánh giống nhau trên mọi hệ quản trị CSDL. */
-    @Column(name = "ten_dang_nhap", nullable = false, length = 30)
+    @Column(name = "TenDangNhap", nullable = false, length = 50)
     private String tenDangNhap;
 
     /** Mật khẩu đã băm bằng BCrypt (60 ký tự). KHÔNG bao giờ lưu mật khẩu gốc. */
-    @Column(name = "mat_khau", nullable = false, length = 100)
+    @Column(name = "MatKhau", nullable = false, length = 255)
     private String matKhau;
 
-    @Column(name = "ho_ten", nullable = false, length = 100)
+    @Nationalized
+    @Column(name = "HoTen", nullable = false, length = 100)
     private String hoTen;
 
-    @Column(name = "email", nullable = false, length = 100)
+    @Column(name = "Email", nullable = false, length = 100)
     private String email;
 
-    @Column(name = "so_dien_thoai", length = 15)
+    @Column(name = "SoDienThoai", length = 15)
     private String soDienThoai;
 
-    /** false = tài khoản bị quản trị viên khóa, không đăng nhập được. */
-    @Column(name = "kich_hoat", nullable = false)
+    /** Cột TrangThai: false = tài khoản bị quản trị viên khóa, không đăng nhập được. */
+    @Column(name = "TrangThai", nullable = false)
     private boolean kichHoat = true;
 
-    @Column(name = "ngay_tao", nullable = false, updatable = false)
+    @Column(name = "NgayTao", nullable = false, updatable = false)
     private LocalDateTime ngayTao;
 
     /** Quan hệ nhiều - một: mỗi tài khoản có đúng một vai trò. */
     @ManyToOne(optional = false)
-    @JoinColumn(name = "vai_tro_id", nullable = false, foreignKey = @ForeignKey(name = "FK_tai_khoan_vai_tro"))
+    @JoinColumn(name = "MaVaiTro", nullable = false, foreignKey = @ForeignKey(name = "FK_TAIKHOAN_VAITRO"))
     private VaiTro vaiTro;
 
     @PrePersist
@@ -77,11 +82,11 @@ public class TaiKhoan {
         return tenDangNhap == null ? "" : tenDangNhap.trim().toLowerCase(Locale.ROOT);
     }
 
-    public Long getId() {
+    public Integer getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(Integer id) {
         this.id = id;
     }
 

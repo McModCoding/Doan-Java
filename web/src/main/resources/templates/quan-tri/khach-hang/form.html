@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<!--/* Dùng chung cho THÊM (form.maKhachHang == null) và SỬA khách hàng - thay cho customer/form.html gốc. */-->
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: trang(~{::title}, ~{::section})}">
+<head><title th:text="'Khách hàng | ' + #{cuahang.ten}">Khách hàng | Web Xe Máy</title></head>
+<body>
+<section th:with="laThem=${form.maKhachHang == null}">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a th:href="@{/quan-tri}">Quản trị</a></li>
+            <li class="breadcrumb-item"><a th:href="@{/quan-tri/khach-hang}">Khách hàng</a></li>
+            <li class="breadcrumb-item active" aria-current="page" th:text="${laThem} ? 'Thêm mới' : 'Sửa thông tin'">Thêm mới</li>
+        </ol>
+    </nav>
+    <div class="dau-trang">
+        <div>
+            <h1 th:text="${laThem} ? 'Thêm khách hàng' : 'Sửa thông tin khách hàng'">Thêm khách hàng</h1>
+            <p class="dau-trang-mo-ta" th:if="${laThem}">Dùng cho khách mua tại cửa hàng. Khách tự đăng ký trên web thì có hồ sơ tự động.</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-body">
+                    <div th:if="${form.coTaiKhoan()}" class="alert alert-info">
+                        <i class="bi bi-info-circle" aria-hidden="true"></i>
+                        <span>Khách hàng có tài khoản web <strong th:text="${form.tenDangNhap}">khach1</strong>:
+                            họ tên và số điện thoại sửa ở đây sẽ cập nhật cho cả tài khoản.</span>
+                    </div>
+
+                    <form th:object="${form}" method="post" novalidate
+                          th:action="${laThem} ? @{/quan-tri/khach-hang/them} : @{/quan-tri/khach-hang/{id}/sua(id=${form.maKhachHang})}">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="hoTen" class="form-label">Họ và tên <span class="text-danger">*</span></label>
+                                <input type="text" th:field="*{hoTen}" class="form-control" th:errorclass="is-invalid" maxlength="100"
+                                       placeholder="Ví dụ: Nguyễn Văn An">
+                                <div class="invalid-feedback" th:errors="*{hoTen}"></div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="soDienThoai" class="form-label">Số điện thoại <span class="text-danger">*</span></label>
+                                <input type="tel" th:field="*{soDienThoai}" class="form-control so" th:errorclass="is-invalid" maxlength="10"
+                                       placeholder="Ví dụ: 0901234567">
+                                <div class="invalid-feedback" th:errors="*{soDienThoai}"></div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="email" class="form-label">Email</label>
+                                <input th:unless="${form.coTaiKhoan()}" type="email" th:field="*{email}" class="form-control"
+                                       th:errorclass="is-invalid" maxlength="100">
+                                <input th:if="${form.coTaiKhoan()}" type="email" id="email" class="form-control-plaintext"
+                                       th:value="*{email}" readonly aria-describedby="goiYEmail">
+                                <div class="form-text" id="goiYEmail" th:if="${form.coTaiKhoan()}">Email đăng nhập, đổi ở trang tài khoản.</div>
+                                <div class="invalid-feedback" th:errors="*{email}"></div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="ngaySinh" class="form-label">Ngày sinh</label>
+                                <input type="date" th:field="*{ngaySinh}" class="form-control" th:errorclass="is-invalid">
+                                <div class="invalid-feedback" th:errors="*{ngaySinh}"></div>
+                            </div>
+                            <div class="col-12">
+                                <label for="diaChi" class="form-label">Địa chỉ</label>
+                                <textarea th:field="*{diaChi}" class="form-control" th:errorclass="is-invalid" rows="2" maxlength="255"
+                                          placeholder="Số nhà, đường, phường, tỉnh/thành phố"></textarea>
+                                <div class="invalid-feedback" th:errors="*{diaChi}"></div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex flex-wrap gap-2 mt-4">
+                            <button type="submit" class="btn btn-primary" th:text="${laThem} ? 'Thêm khách hàng' : 'Lưu thay đổi'">Lưu</button>
+                            <a class="btn btn-outline-secondary" th:href="@{/quan-tri/khach-hang}">Hủy</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+</body>
+</html>

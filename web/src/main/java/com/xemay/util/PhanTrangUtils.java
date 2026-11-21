@@ -25,12 +25,21 @@ public final class PhanTrangUtils {
      * @param cotChoPhep tên các thuộc tính của Entity được phép sắp xếp
      */
     public static Pageable chiSapXepTheo(Pageable pageable, Sort macDinh, Set<String> cotChoPhep) {
+        return chiSapXepTheo(pageable, macDinh, cotChoPhep, "id");
+    }
+
+    /**
+     * Như hàm trên, cho Entity có khóa chính không tên {@code id} (ví dụ {@code maXe}, {@code maKhachHang}).
+     *
+     * @param cotKhoa tên thuộc tính khóa chính, dùng để thứ tự giữa các trang luôn ổn định
+     */
+    public static Pageable chiSapXepTheo(Pageable pageable, Sort macDinh, Set<String> cotChoPhep, String cotKhoa) {
         List<Sort.Order> hopLe = pageable.getSort().stream()
                 .filter(thuTu -> cotChoPhep.contains(thuTu.getProperty()))
                 .toList();
         Sort sapXep = hopLe.isEmpty() ? macDinh : Sort.by(hopLe);
-        if (sapXep.getOrderFor("id") == null) {
-            sapXep = sapXep.and(Sort.by("id"));
+        if (sapXep.getOrderFor(cotKhoa) == null) {
+            sapXep = sapXep.and(Sort.by(cotKhoa));
         }
         return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), sapXep);
     }

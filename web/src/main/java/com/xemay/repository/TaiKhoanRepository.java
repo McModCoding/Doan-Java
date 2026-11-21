@@ -9,7 +9,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.util.Optional;
 
-public interface TaiKhoanRepository extends JpaRepository<TaiKhoan, Long> {
+public interface TaiKhoanRepository extends JpaRepository<TaiKhoan, Integer> {
 
     Optional<TaiKhoan> findByTenDangNhap(String tenDangNhap);
 
@@ -18,7 +18,7 @@ public interface TaiKhoanRepository extends JpaRepository<TaiKhoan, Long> {
     boolean existsByEmail(String email);
 
     /** Email đã được một tài khoản KHÁC dùng chưa (dùng khi sửa thông tin). */
-    boolean existsByEmailAndIdNot(String email, Long id);
+    boolean existsByEmailAndIdNot(String email, Integer id);
 
     long countByVaiTro_Ma(String maVaiTro);
 

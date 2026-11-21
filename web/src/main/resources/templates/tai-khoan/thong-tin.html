@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
       th:replace="~{fragments/layout :: trang(~{::title}, ~{::section})}">
 <head><title th:text="'Thông tin tài khoản | ' + #{cuahang.ten}">Thông tin tài khoản | Web Xe Máy</title></head>
 <body>
@@ -47,7 +47,7 @@
                                 <div class="invalid-feedback" th:errors="*{email}"></div>
                             </div>
                             <div class="col-md-5">
-                                <label for="soDienThoai" class="form-label">Số điện thoại</label>
+                                <label for="soDienThoai" class="form-label">Số điện thoại <span sec:authorize="hasRole('KHACHHANG')" class="text-danger">*</span></label>
                                 <input type="tel" th:field="*{soDienThoai}" class="form-control" th:errorclass="is-invalid" maxlength="10" autocomplete="tel">
                                 <div class="invalid-feedback" th:errors="*{soDienThoai}"></div>
                             </div>

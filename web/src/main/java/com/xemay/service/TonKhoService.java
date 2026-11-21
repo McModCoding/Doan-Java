@@ -12,18 +12,20 @@ import jakarta.persistence.LockModeType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.TreeMap;
 
 /**
  * QUẢN LÝ TỒN KHO - nơi xử lý truy cập đồng thời vào dữ liệu dùng chung.
  *
- * <p><b>Tài nguyên dùng chung:</b> cột {@code so_luong_ton} của mỗi dòng trong bảng {@code xe_may}.
+ * <p><b>Tài nguyên dùng chung:</b> cột {@code SoLuong} của mỗi dòng trong bảng {@code XE_MAY}.
  * <br><b>Ai cùng truy cập:</b> nhiều khách đặt cùng một mẫu xe (mỗi request là một luồng của Tomcat),
  * nhân viên nhập/xuất kho từ chương trình client (mỗi client là một luồng của Socket server).
  *
@@ -36,8 +38,9 @@ import java.util.TreeMap;
  * commit hoặc rollback, rồi mới đọc được số tồn MỚI. Ba bước trên vì thế không bao giờ chạy xen kẽ nhau.
  *
  * <p><b>Cách dùng cho chức năng đặt hàng:</b> gọi {@link #xuatKho} hoặc {@link #xuatKhoNhieuXe} BÊN TRONG
- * phương thức {@code @Transactional} tạo đơn hàng. Nếu hết hàng, {@link HetHangException} làm cả giao dịch
- * đặt hàng bị hủy, không có đơn hàng dở dang.
+ * phương thức {@code @Transactional} tạo (hoặc xác nhận) đơn hàng. Nếu hết hàng, {@link HetHangException} làm
+ * cả giao dịch bị hủy, không có đơn hàng dở dang. Procedure {@code sp_XacNhanDonHang} trong script SQL dùng
+ * cùng kiểu khóa ({@code UPDLOCK}) trên cùng dòng, nên hai cách trừ kho chạy song song vẫn an toàn.
  */
 @Service
 public class TonKhoService {
@@ -72,18 +75,22 @@ public class TonKhoService {
      * @return số lượng tồn còn lại sau khi trừ
      * @throws HetHangException      nếu không đủ hàng - số tồn KHÔNG bị thay đổi
      * @throws KhongTimThayException nếu không có xe mang mã này
+     * @throws NghiepVuException     nếu xe đã ngừng kinh doanh
      */
     @Transactional
-    public int xuatKho(Long xeMayId, int soLuong) {
+    public int xuatKho(Integer maXe, int soLuong) {
         kiemTraSoLuong(soLuong);
-        XeMay xe = khoaDongXe(xeMayId);                       // (1) khóa dòng và đọc số tồn mới nhất
-        if (xe.getSoLuongTon() < soLuong) {                   // (2) kiểm tra
-            throw new HetHangException(xe.getTenXe(), xe.getSoLuongTon(), soLuong);
+        XeMay xe = khoaDongXe(maXe);                          // (1) khóa dòng và đọc số tồn mới nhất
+        if (!Boolean.TRUE.equals(xe.getTrangThai())) {
+            throw new NghiepVuException("Xe \"" + xe.getTenDayDu() + "\" đã ngừng kinh doanh.");
         }
-        xe.setSoLuongTon(xe.getSoLuongTon() - soLuong);       // (3) ghi - Hibernate tự UPDATE khi commit
+        if (xe.getSoLuong() < soLuong) {                      // (2) kiểm tra
+            throw new HetHangException(xe.getTenDayDu(), xe.getSoLuong(), soLuong);
+        }
+        xe.setSoLuong(xe.getSoLuong() - soLuong);             // (3) ghi - Hibernate tự UPDATE khi commit
         log.info("Xuất kho xe #{} '{}': -{} -> còn {} [luồng: {}]",
-                xe.getId(), xe.getTenXe(), soLuong, xe.getSoLuongTon(), Thread.currentThread().getName());
-        return xe.getSoLuongTon();
+                xe.getMaXe(), xe.getTenDayDu(), soLuong, xe.getSoLuong(), Thread.currentThread().getName());
+        return xe.getSoLuong();
     }
 
     /**
@@ -97,8 +104,8 @@ public class TonKhoService {
      * @param soLuongTheoXe mã xe -> số lượng cần trừ
      */
     @Transactional
-    public void xuatKhoNhieuXe(Map<Long, Integer> soLuongTheoXe) {
-        for (Map.Entry<Long, Integer> dong : new TreeMap<>(soLuongTheoXe).entrySet()) {
+    public void xuatKhoNhieuXe(Map<Integer, Integer> soLuongTheoXe) {
+        for (Map.Entry<Integer, Integer> dong : new TreeMap<>(soLuongTheoXe).entrySet()) {
             int soLuong = dong.getValue() == null ? 0 : dong.getValue();
             xuatKho(dong.getKey(), soLuong);
         }
@@ -110,33 +117,34 @@ public class TonKhoService {
      * @return số lượng tồn sau khi cộng
      */
     @Transactional
-    public int nhapKho(Long xeMayId, int soLuong) {
+    public int nhapKho(Integer maXe, int soLuong) {
         kiemTraSoLuong(soLuong);
-        XeMay xe = khoaDongXe(xeMayId);
-        long soMoi = (long) xe.getSoLuongTon() + soLuong;
+        XeMay xe = khoaDongXe(maXe);
+        long soMoi = (long) xe.getSoLuong() + soLuong;
         if (soMoi > Integer.MAX_VALUE) {
             throw new NghiepVuException("Số lượng tồn vượt quá giới hạn cho phép.");
         }
-        xe.setSoLuongTon((int) soMoi);
+        xe.setSoLuong((int) soMoi);
         log.info("Nhập kho xe #{} '{}': +{} -> còn {} [luồng: {}]",
-                xe.getId(), xe.getTenXe(), soLuong, xe.getSoLuongTon(), Thread.currentThread().getName());
-        return xe.getSoLuongTon();
+                xe.getMaXe(), xe.getTenDayDu(), soLuong, xe.getSoLuong(), Thread.currentThread().getName());
+        return xe.getSoLuong();
     }
 
+    /** Tìm xe theo mã, đọc kèm hãng xe (dùng được cả ngoài giao dịch, ví dụ ở luồng Socket). */
     @Transactional(readOnly = true)
-    public XeMay timXe(Long xeMayId) {
-        if (xeMayId == null) {
+    public XeMay timXe(Integer maXe) {
+        if (maXe == null) {
             throw new KhongTimThayException("Chưa chọn xe máy.");
         }
-        return xeMayRepository.findById(xeMayId)
-                .orElseThrow(() -> new KhongTimThayException("Không tìm thấy xe máy có mã " + xeMayId + "."));
+        return xeMayRepository.findWithHangXeByMaXe(maXe)
+                .orElseThrow(() -> new KhongTimThayException("Không tìm thấy xe máy có mã " + maXe + "."));
     }
 
-    /** Danh sách xe kèm số tồn, lọc theo tên (tối đa 50 xe). Từ khóa rỗng thì lấy tất cả. */
+    /** Danh sách xe kèm số tồn, lọc theo tên xe hoặc tên hãng (tối đa 50 xe). Từ khóa rỗng thì lấy tất cả. */
     @Transactional(readOnly = true)
     public List<XeMay> timXeTheoTen(String tuKhoa) {
-        String tk = tuKhoa == null ? "" : tuKhoa.trim();
-        return xeMayRepository.findTop50ByTenXeContainingIgnoreCaseOrderByTenXeAsc(tk);
+        String mau = "%" + (tuKhoa == null ? "" : tuKhoa.trim().toLowerCase(Locale.ROOT)) + "%";
+        return xeMayRepository.timTheoTenHoacHang(mau, PageRequest.of(0, 50));
     }
 
     /**
@@ -147,8 +155,8 @@ public class TonKhoService {
     @Transactional(readOnly = true)
     public CanhBaoTonKho quetXeSapHetHang() {
         List<CanhBaoTonKho.Muc> danhSach = xeMayRepository
-                .findBySoLuongTonLessThanEqualOrderBySoLuongTonAscTenXeAsc(nguongCanhBao).stream()
-                .map(xe -> new CanhBaoTonKho.Muc(xe.getId(), xe.getTenXe(), xe.getSoLuongTon()))
+                .findByTrangThaiTrueAndSoLuongLessThanEqualOrderBySoLuongAscTenXeAsc(nguongCanhBao).stream()
+                .map(xe -> new CanhBaoTonKho.Muc(xe.getMaXe(), xe.getTenDayDu(), xe.getSoLuong()))
                 .toList();
         CanhBaoTonKho ketQua = new CanhBaoTonKho(LocalDateTime.now(), nguongCanhBao, danhSach);
         this.canhBaoGanNhat = ketQua;
@@ -164,20 +172,20 @@ public class TonKhoService {
      * Khóa dòng của một xe cho đến hết giao dịch hiện tại và trả về dữ liệu MỚI NHẤT của dòng đó.
      *
      * <p>{@code refresh(..., PESSIMISTIC_WRITE)} sinh ra câu lệnh
-     * {@code SELECT ... FROM xe_may WITH (UPDLOCK, HOLDLOCK, ROWLOCK) WHERE id = ?} trên SQL Server
+     * {@code SELECT ... FROM XE_MAY WITH (UPDLOCK, HOLDLOCK, ROWLOCK) WHERE MaXe = ?} trên SQL Server
      * (trên CSDL khác là {@code SELECT ... FOR UPDATE}).
      *
      * <p>Dùng {@code refresh} chứ không chỉ {@code find}: nơi gọi có thể đã đọc xe này từ trước trong cùng
      * giao dịch (ví dụ để lấy giá bán), khi đó Hibernate đang giữ một bản CŨ trong bộ nhớ. {@code refresh}
      * buộc đọc lại từ CSDL sau khi đã giữ khóa, nên số tồn dùng để kiểm tra luôn là số mới nhất.
      */
-    private XeMay khoaDongXe(Long xeMayId) {
-        XeMay xe = timXe(xeMayId);
+    private XeMay khoaDongXe(Integer maXe) {
+        XeMay xe = timXe(maXe);
         try {
             entityManager.refresh(xe, LockModeType.PESSIMISTIC_WRITE);
         } catch (EntityNotFoundException e) {
             // Xe vừa bị xóa bởi giao dịch khác trong lúc chờ khóa
-            throw new KhongTimThayException("Không tìm thấy xe máy có mã " + xeMayId + ".");
+            throw new KhongTimThayException("Không tìm thấy xe máy có mã " + maXe + ".");
         }
         return xe;
     }

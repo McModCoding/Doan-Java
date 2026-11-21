@@ -100,7 +100,7 @@ public class BoXuLyLenh {
 
         Authentication ketQua;
         try {
-            // Dùng CHUNG bộ xác thực với trang web: cùng bảng tai_khoan, cùng BCrypt, cùng quy tắc khóa
+            // Dùng CHUNG bộ xác thực với trang web: cùng bảng TAI_KHOAN, cùng BCrypt, cùng quy tắc khóa
             ketQua = authenticationManager.authenticate(UsernamePasswordAuthenticationToken.unauthenticated(ten, phan[1]));
         } catch (AuthenticationException e) {
             LyDoThatBai lyDo = theoDoiDangNhap.thatBai(ten, ip, LichSuDangNhap.KENH_SOCKET, e);
@@ -130,19 +130,19 @@ public class BoXuLyLenh {
 
     private PhanHoi tonKho(String thamSo) {
         long[] so = docSo(thamSo, 1, "TONKHO <mã xe>");
-        return PhanHoi.ok(dongXe(tonKhoService.timXe(so[0])));
+        return PhanHoi.ok(dongXe(tonKhoService.timXe(maXe(so[0]))));
     }
 
     private PhanHoi nhapKho(String thamSo) {
         long[] so = docSo(thamSo, 2, "NHAPKHO <mã xe> <số lượng>");
-        int soLuongTon = tonKhoService.nhapKho(so[0], soLuong(so[1]));
-        return PhanHoi.ok(dongXe(tonKhoService.timXe(so[0]), soLuongTon));
+        int soLuongTon = tonKhoService.nhapKho(maXe(so[0]), soLuong(so[1]));
+        return PhanHoi.ok(dongXe(tonKhoService.timXe(maXe(so[0])), soLuongTon));
     }
 
     private PhanHoi xuatKho(String thamSo) {
         long[] so = docSo(thamSo, 2, "XUATKHO <mã xe> <số lượng>");
-        int soLuongTon = tonKhoService.xuatKho(so[0], soLuong(so[1]));
-        return PhanHoi.ok(dongXe(tonKhoService.timXe(so[0]), soLuongTon));
+        int soLuongTon = tonKhoService.xuatKho(maXe(so[0]), soLuong(so[1]));
+        return PhanHoi.ok(dongXe(tonKhoService.timXe(maXe(so[0])), soLuongTon));
     }
 
     // ------------------------------------------------------------------ Hàm phụ
@@ -175,6 +175,14 @@ public class BoXuLyLenh {
         return ketQua;
     }
 
+    /** Mã xe trong bảng XE_MAY là INT: số ngoài khoảng đó chắc chắn không có xe nào. */
+    private static Integer maXe(long giaTri) {
+        if (giaTri < 1 || giaTri > Integer.MAX_VALUE) {
+            throw new KhongTimThayException("Không tìm thấy xe máy có mã " + giaTri + ".");
+        }
+        return (int) giaTri;
+    }
+
     private static int soLuong(long giaTri) {
         if (giaTri < 1 || giaTri > TonKhoService.SO_LUONG_TOI_DA_MOT_LAN) {
             throw new NghiepVuException("Số lượng phải từ 1 đến " + TonKhoService.SO_LUONG_TOI_DA_MOT_LAN + ".");
@@ -183,13 +191,14 @@ public class BoXuLyLenh {
     }
 
     private static String dongXe(XeMay xe) {
-        return dongXe(xe, xe.getSoLuongTon());
+        return dongXe(xe, xe.getSoLuong());
     }
 
-    /** Một dòng dữ liệu xe: mã|tên xe|giá bán|số lượng tồn. */
+    /** Một dòng dữ liệu xe: mã|tên xe (kèm hãng)|giá bán|số lượng tồn. Xe ngừng kinh doanh có ghi chú sau tên. */
     private static String dongXe(XeMay xe, int soLuongTon) {
-        String gia = xe.getGiaBan() == null ? "0" : xe.getGiaBan().toPlainString();
-        return xe.getId() + NGAN_CACH + cot(xe.getTenXe()) + NGAN_CACH + gia + NGAN_CACH + soLuongTon;
+        String gia = xe.getGiaBan() == null ? "0" : xe.getGiaBan().stripTrailingZeros().toPlainString();
+        String ten = xe.getTenDayDu() + (Boolean.TRUE.equals(xe.getTrangThai()) ? "" : " (ngừng bán)");
+        return xe.getMaXe() + NGAN_CACH + cot(ten) + NGAN_CACH + gia + NGAN_CACH + soLuongTon;
     }
 
     /** Dữ liệu trong một cột không được chứa ký tự ngăn cách cột. */

@@ -12,7 +12,7 @@ package com.xemay.network;
  *
  * Lệnh                               Dữ liệu trả về khi thành công
  * DANGNHAP &lt;tên&gt; &lt;mật khẩu&gt;          1 dòng: họ tên|vai trò
- * DSXE [từ khóa]                     mỗi xe 1 dòng: mã|tên xe|giá bán|số lượng tồn
+ * DSXE [từ khóa]                     mỗi xe 1 dòng: mã|tên xe|giá bán|số lượng tồn (tìm theo tên xe hoặc hãng)
  * TONKHO &lt;mã xe&gt;                     1 dòng: mã|tên xe|giá bán|số lượng tồn
  * NHAPKHO &lt;mã xe&gt; &lt;số lượng&gt;         1 dòng: thông tin xe sau khi cộng tồn kho
  * XUATKHO &lt;mã xe&gt; &lt;số lượng&gt;         1 dòng: thông tin xe sau khi trừ tồn kho

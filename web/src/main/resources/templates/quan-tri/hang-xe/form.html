@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<!--/* Dùng chung cho THÊM (hangXe.maHang == null) và SỬA hãng xe. */-->
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:replace="~{fragments/layout :: trang(~{::title}, ~{::section})}">
+<head><title th:text="'Hãng xe | ' + #{cuahang.ten}">Hãng xe | Web Xe Máy</title></head>
+<body>
+<section th:with="laThem=${hangXe.maHang == null}">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a th:href="@{/quan-tri}">Quản trị</a></li>
+            <li class="breadcrumb-item"><a th:href="@{/quan-tri/hang-xe}">Hãng xe</a></li>
+            <li class="breadcrumb-item active" aria-current="page" th:text="${laThem} ? 'Thêm mới' : 'Sửa hãng xe'">Thêm mới</li>
+        </ol>
+    </nav>
+    <div class="dau-trang">
+        <div>
+            <h1 th:text="${laThem} ? 'Thêm hãng xe' : 'Sửa hãng xe'">Thêm hãng xe</h1>
+            <p class="dau-trang-mo-ta">Tên hãng không được trùng với hãng đã có.</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-body">
+                    <form th:object="${hangXe}" method="post" novalidate
+                          th:action="${laThem} ? @{/quan-tri/hang-xe/them} : @{/quan-tri/hang-xe/{id}/sua(id=${hangXe.maHang})}">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="tenHang" class="form-label">Tên hãng <span class="text-danger">*</span></label>
+                                <input type="text" th:field="*{tenHang}" class="form-control" th:errorclass="is-invalid" maxlength="100"
+                                       placeholder="Ví dụ: Honda">
+                                <div class="invalid-feedback" th:errors="*{tenHang}"></div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="quocGia" class="form-label">Quốc gia</label>
+                                <input type="text" th:field="*{quocGia}" class="form-control" th:errorclass="is-invalid" maxlength="100"
+                                       placeholder="Ví dụ: Nhật Bản">
+                                <div class="invalid-feedback" th:errors="*{quocGia}"></div>
+                            </div>
+                            <div class="col-12">
+                                <label for="moTa" class="form-label">Mô tả</label>
+                                <textarea th:field="*{moTa}" class="form-control" th:errorclass="is-invalid" rows="3" maxlength="500"></textarea>
+                                <div class="invalid-feedback" th:errors="*{moTa}"></div>
+                            </div>
+                            <div class="col-12" sec:authorize="hasRole('ADMIN')">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" role="switch" th:field="*{trangThai}">
+                                    <label class="form-check-label" th:for="${#ids.prev('trangThai')}">Đang hoạt động (hiện trong danh sách hãng khi thêm xe)</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex flex-wrap gap-2 mt-4">
+                            <button type="submit" class="btn btn-primary" th:text="${laThem} ? 'Thêm hãng xe' : 'Lưu thay đổi'">Lưu</button>
+                            <a class="btn btn-outline-secondary" th:href="@{/quan-tri/hang-xe}">Hủy</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+</body>
+</html>

@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<!--/* Danh sách xe máy (quản trị) - giao diện cho phần quản lý xe máy của thành viên phụ trách xe máy, hãng xe. */-->
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:replace="~{fragments/layout :: trang(~{::title}, ~{::section})}">
+<head><title th:text="'Quản lý xe máy | ' + #{cuahang.ten}">Quản lý xe máy | Web Xe Máy</title></head>
+<body>
+<section>
+    <div class="dau-trang mb-3">
+        <div>
+            <h1>Quản lý xe máy</h1>
+            <p class="dau-trang-mo-ta">
+                <span th:text="${boLoc.dangLoc()} ? |${trang.totalElements} mẫu xe phù hợp điều kiện lọc| : |${trang.totalElements} mẫu xe|">20 mẫu xe</span>
+                <th:block th:if="${boLoc.dangLoc()}"> · <a th:href="@{/quan-tri/xe-may}">Bỏ lọc</a></th:block>
+            </p>
+        </div>
+        <a class="btn btn-primary" th:href="@{/quan-tri/xe-may/them}"><i class="bi bi-plus-lg" aria-hidden="true"></i>Thêm xe</a>
+    </div>
+    <div th:replace="~{fragments/quan-tri :: menu}"></div>
+
+    <!-- Tìm kiếm và lọc: gửi GET để địa chỉ trang giữ nguyên điều kiện khi chuyển trang / sắp xếp.
+         Nhấn Enter ở ô bất kỳ hoặc bấm Tìm đều gửi toàn bộ điều kiện. -->
+    <form class="row g-2 mb-4" method="get" th:action="@{/quan-tri/xe-may}" role="search">
+        <div class="col-md-6 col-lg-3">
+            <label for="tenXe" class="visually-hidden">Tên xe</label>
+            <div class="input-group">
+                <input type="search" id="tenXe" name="tenXe" th:value="${boLoc.tenXe}" class="form-control"
+                       placeholder="Tên xe, ví dụ Vision" maxlength="150">
+                <button type="submit" class="btn btn-outline-secondary" aria-label="Tìm"><i class="bi bi-search" aria-hidden="true"></i></button>
+            </div>
+        </div>
+        <div class="col-sm-6 col-md-3 col-lg-2">
+            <label for="maHang" class="visually-hidden">Hãng xe</label>
+            <select id="maHang" name="maHang" class="form-select">
+                <option value="">Tất cả hãng</option>
+                <option th:each="hang : ${dsHangXe}" th:value="${hang.maHang}" th:text="${hang.tenHang}"
+                        th:selected="${hang.maHang == boLoc.maHang}">Honda</option>
+            </select>
+        </div>
+        <div class="col-sm-6 col-md-3 col-lg-2">
+            <label for="loaiXe" class="visually-hidden">Loại xe</label>
+            <select id="loaiXe" name="loaiXe" class="form-select">
+                <option value="">Tất cả loại</option>
+                <option th:each="loai : ${dsLoaiXe}" th:value="${loai}" th:text="${loai}"
+                        th:selected="${loai == boLoc.loaiXe}">Tay ga</option>
+            </select>
+        </div>
+        <div class="col-sm-6 col-md-4 col-lg-2">
+            <label for="trangThai" class="visually-hidden">Trạng thái</label>
+            <select id="trangThai" name="trangThai" class="form-select">
+                <option value="">Mọi trạng thái</option>
+                <option value="true" th:selected="${boLoc.trangThai == true}">Đang bán</option>
+                <option value="false" th:selected="${boLoc.trangThai == false}">Ngừng kinh doanh</option>
+            </select>
+        </div>
+        <div class="col-sm-6 col-md-8 col-lg-3">
+            <div class="input-group">
+                <label for="giaMin" class="visually-hidden">Giá từ</label>
+                <input type="number" id="giaMin" name="giaMin" th:value="${boLoc.giaMin}" class="form-control"
+                       placeholder="Giá từ (đ)" min="0" step="1">
+                <span class="input-group-text" aria-hidden="true">–</span>
+                <label for="giaMax" class="visually-hidden">Giá đến</label>
+                <input type="number" id="giaMax" name="giaMax" th:value="${boLoc.giaMax}" class="form-control"
+                       placeholder="đến" min="0" step="1">
+            </div>
+        </div>
+    </form>
+
+    <div class="bang-khung">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle bang-co-thao-tac">
+                <thead>
+                <tr>
+                    <th class="d-none d-sm-table-cell"><a th:replace="~{fragments/sap-xep :: cot('Mã', 'maXe')}"></a></th>
+                    <th><a th:replace="~{fragments/sap-xep :: cot('Xe', 'tenXe')}"></a></th>
+                    <th class="d-none d-md-table-cell"><a th:replace="~{fragments/sap-xep :: cot('Hãng', 'hangXe.tenHang')}"></a></th>
+                    <th class="d-none d-lg-table-cell"><a th:replace="~{fragments/sap-xep :: cot('Loại', 'loaiXe')}"></a></th>
+                    <th class="text-end"><a th:replace="~{fragments/sap-xep :: cot('Giá bán', 'giaBan')}"></a></th>
+                    <th class="text-end"><a th:replace="~{fragments/sap-xep :: cot('Tồn kho', 'soLuong')}"></a></th>
+                    <th class="d-none d-sm-table-cell"><a th:replace="~{fragments/sap-xep :: cot('Trạng thái', 'trangThai')}"></a></th>
+                    <th class="text-end"><span class="visually-hidden">Thao tác</span></th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:if="${trang.empty}">
+                    <td colspan="8" class="text-center chu-phu py-5">Không tìm thấy xe nào phù hợp.</td>
+                </tr>
+                <tr th:each="xe : ${trang.content}">
+                    <td class="d-none d-sm-table-cell so chu-phu" th:text="${xe.maXe}">1</td>
+                    <td>
+                        <span class="o-chinh" th:text="${xe.tenXe}">Vision</span>
+                        <div class="chu-phu chu-nho d-none d-sm-block"
+                             th:text="${xe.loaiXe} + (${xe.phanKhoi} != null ? ' · ' + ${xe.phanKhoi} + ' cc' : '') + (${xe.mauSac} != null ? ' · ' + ${xe.mauSac} : '')">Tay ga · 110 cc · Trắng</div>
+                        <div class="d-md-none chu-phu chu-nho" th:text="${xe.hangXe.tenHang}">Honda</div>
+                    </td>
+                    <td class="d-none d-md-table-cell" th:text="${xe.hangXe.tenHang}">Honda</td>
+                    <td class="d-none d-lg-table-cell" th:text="${xe.loaiXe}">Tay ga</td>
+                    <td class="text-end so text-nowrap" th:text="${#numbers.formatDecimal(xe.giaBan, 1, 'POINT', 0, 'COMMA')} + ' đ'">32.000.000 đ</td>
+                    <td class="text-end">
+                        <span th:if="${xe.soLuong == 0}" class="nhan nhan-loi">Hết hàng</span>
+                        <span th:if="${xe.soLuong > 0 and xe.soLuong <= nguongCanhBao}" class="nhan nhan-canh-bao so"
+                              th:text="|Còn ${xe.soLuong}|">Còn 2</span>
+                        <span th:if="${xe.soLuong > nguongCanhBao}" class="so" th:text="${xe.soLuong}">25</span>
+                    </td>
+                    <td class="d-none d-sm-table-cell">
+                        <span th:if="${xe.trangThai}" class="nhan nhan-thanh-cong">Đang bán</span>
+                        <span th:unless="${xe.trangThai}" class="nhan nhan-trung-tinh">Ngừng kinh doanh</span>
+                    </td>
+                    <td class="text-end">
+                        <div class="thao-tac">
+                            <a class="btn btn-icon" th:href="@{/quan-tri/xe-may/{id}/sua(id=${xe.maXe})}"
+                               title="Sửa, nhập kho" aria-label="Sửa, nhập kho"><i class="bi bi-pencil" aria-hidden="true"></i></a>
+                            <form sec:authorize="hasRole('ADMIN')" th:if="${xe.trangThai}" method="post"
+                                  th:action="@{/quan-tri/xe-may/{id}/ngung-ban(id=${xe.maXe})}"
+                                  th:data-xac-nhan="|Ngừng kinh doanh xe ${xe.hangXe.tenHang} ${xe.tenXe}? Xe sẽ không bán được nữa, lịch sử đơn hàng vẫn giữ nguyên.|"
+                                  data-nut-xac-nhan="Ngừng kinh doanh">
+                                <button type="submit" class="btn btn-icon nguy-hiem" title="Ngừng kinh doanh" aria-label="Ngừng kinh doanh">
+                                    <i class="bi bi-slash-circle" aria-hidden="true"></i></button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div th:replace="~{fragments/phan-trang :: phanTrang(${trang})}"></div>
+</section>
+</body>
+</html>

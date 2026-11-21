@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<!--/* Dùng chung cho THÊM (xeMayDTO.maXe == null) và SỬA xe máy. Số lượng tồn chỉ nhập khi thêm; khi sửa dùng Nhập kho. */-->
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:replace="~{fragments/layout :: trang(~{::title}, ~{::section})}">
+<head><title th:text="'Xe máy | ' + #{cuahang.ten}">Xe máy | Web Xe Máy</title></head>
+<body>
+<section th:with="laThem=${xeMayDTO.maXe == null}">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a th:href="@{/quan-tri}">Quản trị</a></li>
+            <li class="breadcrumb-item"><a th:href="@{/quan-tri/xe-may}">Xe máy</a></li>
+            <li class="breadcrumb-item active" aria-current="page" th:text="${laThem} ? 'Thêm mới' : ${xeMay.tenDayDu}">Thêm mới</li>
+        </ol>
+    </nav>
+    <div class="dau-trang">
+        <div>
+            <h1 th:text="${laThem} ? 'Thêm xe máy' : 'Sửa xe máy'">Thêm xe máy</h1>
+            <p class="dau-trang-mo-ta" th:if="${laThem}">Nhập mẫu xe mới và số xe đang có trong kho.</p>
+            <p class="dau-trang-mo-ta" th:unless="${laThem}">Số lượng tồn kho không sửa trực tiếp ở đây; dùng mục Nhập kho bên cạnh.</p>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-body">
+                    <form th:object="${xeMayDTO}" method="post" novalidate
+                          th:action="${laThem} ? @{/quan-tri/xe-may/them} : @{/quan-tri/xe-may/{id}/sua(id=${xeMayDTO.maXe})}">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="maHang" class="form-label">Hãng xe <span class="text-danger">*</span></label>
+                                <select th:field="*{maHang}" class="form-select" th:errorclass="is-invalid">
+                                    <option value="">Chọn hãng xe</option>
+                                    <option th:each="hang : ${dsHangXe}" th:value="${hang.maHang}" th:text="${hang.tenHang}">Honda</option>
+                                </select>
+                                <div class="invalid-feedback" th:errors="*{maHang}"></div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="tenXe" class="form-label">Tên xe <span class="text-danger">*</span></label>
+                                <input type="text" th:field="*{tenXe}" class="form-control" th:errorclass="is-invalid" maxlength="150"
+                                       placeholder="Ví dụ: Vision 2025">
+                                <div class="invalid-feedback" th:errors="*{tenXe}"></div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="loaiXe" class="form-label">Loại xe <span class="text-danger">*</span></label>
+                                <input type="text" th:field="*{loaiXe}" class="form-control" th:errorclass="is-invalid" maxlength="50"
+                                       list="goiYLoaiXe" autocomplete="off">
+                                <datalist id="goiYLoaiXe">
+                                    <option th:each="loai : ${dsLoaiXe}" th:value="${loai}"></option>
+                                </datalist>
+                                <div class="form-text">Chọn trong gợi ý (Xe số, Tay ga, Côn tay...) hoặc gõ loại mới.</div>
+                                <div class="invalid-feedback" th:errors="*{loaiXe}"></div>
+                            </div>
+                            <div class="col-sm-6 col-md-3">
+                                <label for="phanKhoi" class="form-label">Phân khối (cc)</label>
+                                <input type="number" th:field="*{phanKhoi}" class="form-control" th:errorclass="is-invalid" min="1" step="1">
+                                <div class="form-text">Bỏ trống với xe điện.</div>
+                                <div class="invalid-feedback" th:errors="*{phanKhoi}"></div>
+                            </div>
+                            <div class="col-sm-6 col-md-3">
+                                <label for="mauSac" class="form-label">Màu sắc</label>
+                                <input type="text" th:field="*{mauSac}" class="form-control" th:errorclass="is-invalid" maxlength="50">
+                                <div class="invalid-feedback" th:errors="*{mauSac}"></div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="giaBan" class="form-label">Giá bán (đ) <span class="text-danger">*</span></label>
+                                <input type="number" th:field="*{giaBan}" class="form-control" th:errorclass="is-invalid" min="1" step="1"
+                                       inputmode="numeric">
+                                <div class="invalid-feedback" th:errors="*{giaBan}"></div>
+                            </div>
+                            <div class="col-md-6" th:if="${laThem}">
+                                <label for="soLuong" class="form-label">Số lượng trong kho <span class="text-danger">*</span></label>
+                                <input type="number" th:field="*{soLuong}" class="form-control" th:errorclass="is-invalid" min="0" step="1">
+                                <div class="invalid-feedback" th:errors="*{soLuong}"></div>
+                            </div>
+                            <!-- Khi sửa: gửi kèm số lượng hiện tại chỉ để qua bước kiểm tra form; Service không dùng giá trị này -->
+                            <input th:unless="${laThem}" type="hidden" th:field="*{soLuong}">
+                            <div class="col-12">
+                                <label for="hinhAnh" class="form-label">Hình ảnh</label>
+                                <input type="text" th:field="*{hinhAnh}" class="form-control" th:errorclass="is-invalid" maxlength="500"
+                                       placeholder="/images/xe/vision.jpg">
+                                <div class="form-text">Đường dẫn ảnh trong thư mục static/images hoặc địa chỉ ảnh đầy đủ.</div>
+                                <div class="invalid-feedback" th:errors="*{hinhAnh}"></div>
+                            </div>
+                            <div class="col-12">
+                                <label for="moTa" class="form-label">Mô tả</label>
+                                <textarea th:field="*{moTa}" class="form-control" th:errorclass="is-invalid" rows="3" maxlength="1000"></textarea>
+                                <div class="invalid-feedback" th:errors="*{moTa}"></div>
+                            </div>
+                            <div class="col-12" sec:authorize="hasRole('ADMIN')">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" role="switch" th:field="*{trangThai}">
+                                    <label class="form-check-label" th:for="${#ids.prev('trangThai')}">Đang kinh doanh (bỏ chọn để ngừng bán mẫu xe này)</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex flex-wrap gap-2 mt-4">
+                            <button type="submit" class="btn btn-primary" th:text="${laThem} ? 'Thêm xe' : 'Lưu thay đổi'">Lưu</button>
+                            <a class="btn btn-outline-secondary" th:href="@{/quan-tri/xe-may}">Hủy</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Nhập kho: form riêng, chỉ có khi SỬA. Cộng tồn kho qua TonKhoService (khóa dòng), không ghi đè số đang có. -->
+        <div class="col-lg-4" th:unless="${laThem}">
+            <div class="card">
+                <div class="card-header">
+                    <h2>Tồn kho</h2>
+                    <span th:if="${xeMay.trangThai}" class="nhan nhan-thanh-cong">Đang bán</span>
+                    <span th:unless="${xeMay.trangThai}" class="nhan nhan-trung-tinh">Ngừng kinh doanh</span>
+                </div>
+                <div class="card-body">
+                    <dl class="danh-sach-thong-tin mb-4">
+                        <dt>Hiện có</dt>
+                        <dd class="so" th:text="|${xeMay.soLuong} xe|">12 xe</dd>
+                        <dt>Ngày tạo</dt>
+                        <dd class="so" th:text="${#temporals.format(xeMay.ngayTao, 'dd/MM/yyyy')}">01/01/2026</dd>
+                    </dl>
+                    <form method="post" th:action="@{/quan-tri/xe-may/{id}/nhap-kho(id=${xeMay.maXe})}">
+                        <label for="soLuongNhap" class="form-label">Nhập thêm</label>
+                        <div class="input-group">
+                            <input type="number" id="soLuongNhap" name="soLuong" class="form-control" min="1" step="1" required
+                                   aria-describedby="goiYNhapKho">
+                            <button type="submit" class="btn btn-outline-secondary">Nhập kho</button>
+                        </div>
+                        <div class="form-text" id="goiYNhapKho">Số xe vừa về kho. Đơn đặt hàng đang chạy cùng lúc vẫn được trừ đúng.</div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+</body>
+</html>

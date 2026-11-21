@@ -1,8 +1,10 @@
 package com.xemay;
 
 import com.xemay.dto.DangKyForm;
+import com.xemay.entity.HangXe;
 import com.xemay.entity.TaiKhoan;
 import com.xemay.entity.XeMay;
+import com.xemay.repository.HangXeRepository;
 import com.xemay.repository.XeMayRepository;
 import com.xemay.service.TaiKhoanService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,25 +35,46 @@ public abstract class KiemThuTichHop {
     @Autowired
     protected XeMayRepository xeMayRepository;
 
-    /** Tạo một tài khoản khách hàng mới (mật khẩu "matkhau1") với tên không trùng các bài kiểm thử khác. */
+    @Autowired
+    protected HangXeRepository hangXeRepository;
+
+    /** Số thứ tự tăng dần, không trùng giữa các bài kiểm thử trong cùng một lần chạy. */
+    protected static int soThuTu() {
+        return SO_THU_TU.incrementAndGet();
+    }
+
+    /** Số điện thoại 10 chữ số không trùng (đầu 07 để khác dữ liệu mẫu). */
+    protected static String soDienThoaiMoi() {
+        return String.format("07%08d", soThuTu());
+    }
+
+    /** Tạo một tài khoản khách hàng mới (mật khẩu "matkhau1") với tên, số điện thoại không trùng bài khác. */
     protected TaiKhoan taoKhachHangMoi() {
-        String ten = "kiemthu" + SO_THU_TU.incrementAndGet() + "_" + (System.nanoTime() % 100_000);
+        String ten = "kiemthu" + soThuTu() + "_" + (System.nanoTime() % 100_000);
         DangKyForm form = new DangKyForm();
         form.setTenDangNhap(ten);
         form.setMatKhau("matkhau1");
         form.setNhapLaiMatKhau("matkhau1");
         form.setHoTen("Người Kiểm Thử");
         form.setEmail(ten + "@kiemthu.vn");
+        form.setSoDienThoai(soDienThoaiMoi());
         return taiKhoanService.dangKy(form);
     }
 
-    /** Tạo một xe máy mới với số lượng tồn cho trước. */
-    protected XeMay taoXe(int soLuongTon) {
-        return xeMayRepository.save(new XeMay("Xe kiểm thử " + SO_THU_TU.incrementAndGet(),
-                new BigDecimal("30000000"), soLuongTon));
+    /** Hãng xe dùng chung cho các bài kiểm thử (tạo ở lần gọi đầu tiên). */
+    protected synchronized HangXe hangKiemThu() {
+        return hangXeRepository.findByTenHangContainingIgnoreCase("Hãng kiểm thử").stream().findFirst()
+                .orElseGet(() -> hangXeRepository.save(new HangXe("Hãng kiểm thử", "Việt Nam")));
     }
 
-    protected int tonKho(Long xeId) {
-        return xeMayRepository.findById(xeId).orElseThrow().getSoLuongTon();
+    /** Tạo một xe máy mới (đang bán) với số lượng tồn cho trước. */
+    protected XeMay taoXe(int soLuongTon) {
+        XeMay xe = new XeMay(hangKiemThu(), "Xe kiểm thử " + soThuTu(), "Tay ga",
+                new BigDecimal("30000000"), soLuongTon);
+        return xeMayRepository.save(xe);
+    }
+
+    protected int tonKho(Integer maXe) {
+        return xeMayRepository.findById(maXe).orElseThrow().getSoLuong();
     }
 }

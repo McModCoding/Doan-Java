@@ -59,7 +59,9 @@
                             </div>
                             <div class="col-md-6">
                                 <label for="soDienThoai" class="form-label">Số điện thoại</label>
-                                <input type="tel" th:field="*{soDienThoai}" class="form-control" th:errorclass="is-invalid" maxlength="10">
+                                <input type="tel" th:field="*{soDienThoai}" class="form-control" th:errorclass="is-invalid" maxlength="10"
+                                       aria-describedby="goiYSoDienThoai">
+                                <div class="form-text" id="goiYSoDienThoai">Bắt buộc với tài khoản khách hàng (dùng cho hồ sơ khách hàng).</div>
                                 <div class="invalid-feedback" th:errors="*{soDienThoai}"></div>
                             </div>
                             <div class="col-md-6">

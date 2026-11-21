@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<!--/*
+    Danh sách khách hàng (quản trị) - phần quản lý khách hàng. Thay cho trang customer/list.html gốc (trang tĩnh,
+    dữ liệu viết sẵn trong JavaScript): ở đây dữ liệu đọc từ bảng KHACH_HANG qua KhachHangController.
+*/-->
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:replace="~{fragments/layout :: trang(~{::title}, ~{::section})}">
+<head><title th:text="'Quản lý khách hàng | ' + #{cuahang.ten}">Quản lý khách hàng | Web Xe Máy</title></head>
+<body>
+<section>
+    <div class="dau-trang mb-3">
+        <div>
+            <h1>Quản lý khách hàng</h1>
+            <p class="dau-trang-mo-ta" th:text="|${trang.totalElements} khách hàng phù hợp|">23 khách hàng</p>
+        </div>
+        <a class="btn btn-primary" th:href="@{/quan-tri/khach-hang/them}"><i class="bi bi-plus-lg" aria-hidden="true"></i>Thêm khách hàng</a>
+    </div>
+    <div th:replace="~{fragments/quan-tri :: menu}"></div>
+
+    <form class="row g-2 mb-4" method="get" th:action="@{/quan-tri/khach-hang}" role="search">
+        <div class="col-md-6 col-lg-5">
+            <label for="tuKhoa" class="visually-hidden">Từ khóa</label>
+            <input type="search" id="tuKhoa" name="tuKhoa" th:value="${tuKhoa}" class="form-control"
+                   placeholder="Họ tên hoặc số điện thoại" maxlength="100">
+        </div>
+        <div class="col-md-6 col-lg-4 d-flex gap-2">
+            <button type="submit" class="btn btn-outline-secondary"><i class="bi bi-search" aria-hidden="true"></i>Tìm</button>
+            <a class="btn btn-outline-secondary" th:href="@{/quan-tri/khach-hang}" th:if="${!#strings.isEmpty(tuKhoa)}">Bỏ lọc</a>
+        </div>
+    </form>
+
+    <div class="bang-khung">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle bang-co-thao-tac">
+                <thead>
+                <tr>
+                    <th class="d-none d-sm-table-cell"><a th:replace="~{fragments/sap-xep :: cot('Mã', 'maKhachHang')}"></a></th>
+                    <th><a th:replace="~{fragments/sap-xep :: cot('Khách hàng', 'hoTen')}"></a></th>
+                    <th class="d-none d-md-table-cell"><a th:replace="~{fragments/sap-xep :: cot('Số điện thoại', 'soDienThoai')}"></a></th>
+                    <th class="d-none d-xl-table-cell"><a th:replace="~{fragments/sap-xep :: cot('Email', 'email')}"></a></th>
+                    <th class="d-none d-lg-table-cell">Tài khoản web</th>
+                    <th class="d-none d-lg-table-cell"><a th:replace="~{fragments/sap-xep :: cot('Ngày tạo', 'ngayTao')}"></a></th>
+                    <th class="text-end"><span class="visually-hidden">Thao tác</span></th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:if="${trang.empty}">
+                    <td colspan="7" class="text-center chu-phu py-5">Không tìm thấy khách hàng nào phù hợp.</td>
+                </tr>
+                <tr th:each="kh : ${trang.content}">
+                    <td class="d-none d-sm-table-cell so chu-phu" th:text="${kh.maKhachHang}">1</td>
+                    <td>
+                        <span class="o-chinh" th:text="${kh.hoTen}">Nguyễn Văn An</span>
+                        <div class="chu-phu chu-nho" th:if="${kh.diaChi}" th:text="${kh.diaChi}">Địa chỉ</div>
+                        <div class="d-md-none chu-phu chu-nho so" th:text="${kh.soDienThoai}">0900000001</div>
+                    </td>
+                    <td class="d-none d-md-table-cell so" th:text="${kh.soDienThoai}">0900000001</td>
+                    <td class="d-none d-xl-table-cell chu-phu" th:text="${kh.email}">email</td>
+                    <td class="d-none d-lg-table-cell">
+                        <span th:if="${kh.coTaiKhoan()}" class="nhan nhan-vien" th:text="${kh.taiKhoan.tenDangNhap}">khach1</span>
+                        <span th:unless="${kh.coTaiKhoan()}" class="chu-phu chu-nho">Mua tại cửa hàng</span>
+                    </td>
+                    <td class="d-none d-lg-table-cell so chu-phu text-nowrap"
+                        th:text="${#temporals.format(kh.ngayTao, 'dd/MM/yyyy')}">01/01/2026</td>
+                    <td class="text-end">
+                        <div class="thao-tac">
+                            <a class="btn btn-icon" th:href="@{/quan-tri/khach-hang/{id}/sua(id=${kh.maKhachHang})}"
+                               title="Sửa" aria-label="Sửa"><i class="bi bi-pencil" aria-hidden="true"></i></a>
+                            <!-- Khách có tài khoản web: xóa từ trang tài khoản. Khách đã có đơn hàng: CSDL không cho xóa. -->
+                            <form sec:authorize="hasRole('ADMIN')" th:unless="${kh.coTaiKhoan()}" method="post"
+                                  th:action="@{/quan-tri/khach-hang/{id}/xoa(id=${kh.maKhachHang})}"
+                                  th:data-xac-nhan="|Xóa khách hàng ${kh.hoTen}? Thao tác này không thể hoàn tác.|"
+                                  data-nut-xac-nhan="Xóa khách hàng">
+                                <button type="submit" class="btn btn-icon nguy-hiem" title="Xóa" aria-label="Xóa">
+                                    <i class="bi bi-trash3" aria-hidden="true"></i></button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div th:replace="~{fragments/phan-trang :: phanTrang(${trang})}"></div>
+</section>
+</body>
+</html>

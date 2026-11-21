@@ -87,7 +87,7 @@ public class QuanLyTaiKhoanController {
     // ------------------------------------------------------------------ Sửa
 
     @GetMapping("/{id}/sua")
-    public String formSua(@PathVariable("id") Long id, Model model) {
+    public String formSua(@PathVariable("id") Integer id, Model model) {
         TaiKhoan taiKhoan = taiKhoanService.timTheoId(id);
         TaiKhoanForm form = new TaiKhoanForm();
         form.setId(taiKhoan.getId());
@@ -102,7 +102,7 @@ public class QuanLyTaiKhoanController {
     }
 
     @PostMapping("/{id}/sua")
-    public String sua(@PathVariable("id") Long id,
+    public String sua(@PathVariable("id") Integer id,
                       @Valid @ModelAttribute("form") TaiKhoanForm form, BindingResult ketQua,
                       Principal nguoiDung, Model model, RedirectAttributes chuyenHuong) {
         // Mã và tên đăng nhập lấy từ CSDL theo {id} trên URL, không tin giá trị gửi lên từ form
@@ -127,7 +127,7 @@ public class QuanLyTaiKhoanController {
     // ------------------------------------------------------------------ Các thao tác nhanh
 
     @PostMapping("/{id}/khoa")
-    public String khoa(@PathVariable("id") Long id, Principal nguoiDung, RedirectAttributes chuyenHuong) {
+    public String khoa(@PathVariable("id") Integer id, Principal nguoiDung, RedirectAttributes chuyenHuong) {
         try {
             TaiKhoan taiKhoan = taiKhoanService.khoa(id, nguoiDung.getName());
             chuyenHuong.addFlashAttribute("thongBaoThanhCong", "Đã khóa tài khoản \"" + taiKhoan.getTenDangNhap() + "\".");
@@ -138,14 +138,14 @@ public class QuanLyTaiKhoanController {
     }
 
     @PostMapping("/{id}/mo-khoa")
-    public String moKhoa(@PathVariable("id") Long id, RedirectAttributes chuyenHuong) {
+    public String moKhoa(@PathVariable("id") Integer id, RedirectAttributes chuyenHuong) {
         TaiKhoan taiKhoan = taiKhoanService.moKhoa(id);
         chuyenHuong.addFlashAttribute("thongBaoThanhCong", "Đã mở khóa tài khoản \"" + taiKhoan.getTenDangNhap() + "\".");
         return DANH_SACH;
     }
 
     @PostMapping("/{id}/dat-lai-mat-khau")
-    public String datLaiMatKhau(@PathVariable("id") Long id,
+    public String datLaiMatKhau(@PathVariable("id") Integer id,
                                 @RequestParam(name = "matKhauMoi", defaultValue = "") String matKhauMoi,
                                 RedirectAttributes chuyenHuong) {
         try {
@@ -160,7 +160,7 @@ public class QuanLyTaiKhoanController {
     }
 
     @PostMapping("/{id}/xoa")
-    public String xoa(@PathVariable("id") Long id, Principal nguoiDung, RedirectAttributes chuyenHuong) {
+    public String xoa(@PathVariable("id") Integer id, Principal nguoiDung, RedirectAttributes chuyenHuong) {
         try {
             taiKhoanService.xoa(id, nguoiDung.getName());
             chuyenHuong.addFlashAttribute("thongBaoThanhCong", "Đã xóa tài khoản.");

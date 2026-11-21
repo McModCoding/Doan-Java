@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Cầu nối giữa Spring Security và bảng {@code tai_khoan}.
+ * Cầu nối giữa Spring Security và bảng {@code TAI_KHOAN}.
  *
  * <p>Khi người dùng gửi form đăng nhập, Spring Security gọi {@link #loadUserByUsername} để đọc tài khoản
  * từ cơ sở dữ liệu, sau đó tự so sánh mật khẩu người dùng nhập với mật khẩu đã băm BCrypt.

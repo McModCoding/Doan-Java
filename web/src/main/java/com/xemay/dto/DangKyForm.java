@@ -29,6 +29,8 @@ public class DangKyForm {
     @Size(max = 100, message = "Email tối đa 100 ký tự")
     private String email;
 
+    /** Bắt buộc khi đăng ký: hồ sơ khách hàng (bảng KHACH_HANG) cần số điện thoại để liên hệ giao xe. */
+    @NotBlank(message = "Vui lòng nhập số điện thoại")
     @Pattern(regexp = QuyTacNhap.SO_DIEN_THOAI, message = QuyTacNhap.SO_DIEN_THOAI_SAI)
     private String soDienThoai;
 

@@ -72,9 +72,10 @@
                                 <div class="invalid-feedback" th:errors="*{email}"></div>
                             </div>
                             <div class="col-md-6">
-                                <label for="soDienThoai" class="form-label">Số điện thoại</label>
+                                <label for="soDienThoai" class="form-label">Số điện thoại <span class="text-danger">*</span></label>
                                 <input type="tel" th:field="*{soDienThoai}" class="form-control" th:errorclass="is-invalid"
-                                       maxlength="10" autocomplete="tel">
+                                       maxlength="10" autocomplete="tel" aria-describedby="goiYSoDienThoai">
+                                <div class="form-text" id="goiYSoDienThoai">Cửa hàng gọi số này để xác nhận đơn và hẹn giao xe.</div>
                                 <div class="invalid-feedback" th:errors="*{soDienThoai}"></div>
                             </div>
                         </div>

@@ -39,23 +39,26 @@ public class TaiKhoanService {
     private final LichSuDangNhapRepository lichSuDangNhapRepository;
     private final PasswordEncoder passwordEncoder;
     private final BoDemDangNhapSai boDemDangNhapSai;
+    private final KhachHangService khachHangService;
 
     public TaiKhoanService(TaiKhoanRepository taiKhoanRepository,
                            VaiTroRepository vaiTroRepository,
                            LichSuDangNhapRepository lichSuDangNhapRepository,
                            PasswordEncoder passwordEncoder,
-                           BoDemDangNhapSai boDemDangNhapSai) {
+                           BoDemDangNhapSai boDemDangNhapSai,
+                           KhachHangService khachHangService) {
         this.taiKhoanRepository = taiKhoanRepository;
         this.vaiTroRepository = vaiTroRepository;
         this.lichSuDangNhapRepository = lichSuDangNhapRepository;
         this.passwordEncoder = passwordEncoder;
         this.boDemDangNhapSai = boDemDangNhapSai;
+        this.khachHangService = khachHangService;
     }
 
     // ------------------------------------------------------------------ Tra cứu
 
     @Transactional(readOnly = true)
-    public TaiKhoan timTheoId(Long id) {
+    public TaiKhoan timTheoId(Integer id) {
         return taiKhoanRepository.findById(id)
                 .orElseThrow(() -> new KhongTimThayException("Không tìm thấy tài khoản có mã " + id + "."));
     }
@@ -90,11 +93,16 @@ public class TaiKhoanService {
 
     // ------------------------------------------------------------------ Người dùng tự thao tác
 
-    /** Khách tự đăng ký: luôn nhận vai trò KHACHHANG. */
+    /**
+     * Khách tự đăng ký: luôn nhận vai trò KHACHHANG và có ngay hồ sơ khách hàng (bảng KHACH_HANG).
+     * Tài khoản và hồ sơ được tạo trong CÙNG một giao dịch: lỗi ở bước nào thì cả hai đều không được lưu.
+     */
     @Transactional
     public TaiKhoan dangKy(DangKyForm form) {
-        return taoMoi(form.getTenDangNhap(), form.getMatKhau(), form.getHoTen(), form.getEmail(),
+        TaiKhoan taiKhoan = taoMoi(form.getTenDangNhap(), form.getMatKhau(), form.getHoTen(), form.getEmail(),
                 form.getSoDienThoai(), timVaiTroTheoMa(VaiTro.KHACHHANG), true);
+        khachHangService.taoHoSoChoTaiKhoan(taiKhoan);
+        return taiKhoan;
     }
 
     @Transactional
@@ -107,7 +115,9 @@ public class TaiKhoanService {
         taiKhoan.setHoTen(form.getHoTen().trim());
         taiKhoan.setEmail(email);
         taiKhoan.setSoDienThoai(rongThanhNull(form.getSoDienThoai()));
-        return luu(taiKhoan);
+        TaiKhoan daLuu = luu(taiKhoan);
+        dongBoHoSoKhachHang(daLuu);
+        return daLuu;
     }
 
     @Transactional
@@ -125,11 +135,17 @@ public class TaiKhoanService {
 
     // ------------------------------------------------------------------ Quản trị viên
 
+    /** Thêm tài khoản; tài khoản khách hàng được tạo kèm hồ sơ khách hàng (cần số điện thoại). */
     @PreAuthorize("hasRole('ADMIN')")
     @Transactional
     public TaiKhoan them(TaiKhoanForm form) {
-        return taoMoi(form.getTenDangNhap(), form.getMatKhau(), form.getHoTen(), form.getEmail(),
-                form.getSoDienThoai(), timVaiTroTheoId(form.getVaiTroId()), form.isKichHoat());
+        VaiTro vaiTro = timVaiTroTheoId(form.getVaiTroId());
+        TaiKhoan taiKhoan = taoMoi(form.getTenDangNhap(), form.getMatKhau(), form.getHoTen(), form.getEmail(),
+                form.getSoDienThoai(), vaiTro, form.isKichHoat());
+        if (laKhachHang(vaiTro)) {
+            khachHangService.taoHoSoChoTaiKhoan(taiKhoan);
+        }
+        return taiKhoan;
     }
 
     /**
@@ -139,7 +155,7 @@ public class TaiKhoanService {
      */
     @PreAuthorize("hasRole('ADMIN')")
     @Transactional
-    public TaiKhoan capNhat(Long id, TaiKhoanForm form, String nguoiThucHien) {
+    public TaiKhoan capNhat(Integer id, TaiKhoanForm form, String nguoiThucHien) {
         TaiKhoan taiKhoan = timTheoId(id);
         VaiTro vaiTroMoi = timVaiTroTheoId(form.getVaiTroId());
 
@@ -158,12 +174,14 @@ public class TaiKhoanService {
         taiKhoan.setSoDienThoai(rongThanhNull(form.getSoDienThoai()));
         taiKhoan.setVaiTro(vaiTroMoi);
         taiKhoan.setKichHoat(form.isKichHoat());
-        return luu(taiKhoan);
+        TaiKhoan daLuu = luu(taiKhoan);
+        dongBoHoSoKhachHang(daLuu);
+        return daLuu;
     }
 
     @PreAuthorize("hasRole('ADMIN')")
     @Transactional
-    public TaiKhoan khoa(Long id, String nguoiThucHien) {
+    public TaiKhoan khoa(Integer id, String nguoiThucHien) {
         TaiKhoan taiKhoan = timTheoId(id);
         if (laChinhMinh(taiKhoan, nguoiThucHien)) {
             throw new NghiepVuException("Bạn không thể tự khóa tài khoản của chính mình.");
@@ -174,7 +192,7 @@ public class TaiKhoanService {
 
     @PreAuthorize("hasRole('ADMIN')")
     @Transactional
-    public TaiKhoan moKhoa(Long id) {
+    public TaiKhoan moKhoa(Integer id) {
         TaiKhoan taiKhoan = timTheoId(id);
         taiKhoan.setKichHoat(true);
         // Bỏ luôn trạng thái tạm khóa do nhập sai mật khẩu, để người dùng đăng nhập lại được ngay
@@ -184,7 +202,7 @@ public class TaiKhoanService {
 
     @PreAuthorize("hasRole('ADMIN')")
     @Transactional
-    public TaiKhoan datLaiMatKhau(Long id, String matKhauMoi) {
+    public TaiKhoan datLaiMatKhau(Integer id, String matKhauMoi) {
         TaiKhoan taiKhoan = timTheoId(id);
         kiemTraMatKhau(matKhauMoi, "matKhauMoi");
         taiKhoan.setMatKhau(passwordEncoder.encode(matKhauMoi));
@@ -193,30 +211,46 @@ public class TaiKhoanService {
     }
 
     /**
-     * Xóa tài khoản. Nhật ký đăng nhập của tài khoản được giữ lại (chỉ gỡ liên kết).
-     * Nếu tài khoản đang được bảng khác tham chiếu (đơn hàng, hồ sơ khách hàng...) thì KHÔNG xóa được.
+     * Xóa tài khoản. Nhật ký đăng nhập và hồ sơ khách hàng của tài khoản được giữ lại (chỉ gỡ liên kết):
+     * hồ sơ trở thành khách không có tài khoản, đơn hàng cũ vẫn còn.
+     * Nếu tài khoản còn được bảng khác tham chiếu thì KHÔNG xóa được.
      */
     @PreAuthorize("hasRole('ADMIN')")
     @Transactional
-    public void xoa(Long id, String nguoiThucHien) {
+    public void xoa(Integer id, String nguoiThucHien) {
         TaiKhoan taiKhoan = timTheoId(id);
         if (laChinhMinh(taiKhoan, nguoiThucHien)) {
             throw new NghiepVuException("Bạn không thể tự xóa tài khoản của chính mình.");
         }
         String tenDangNhap = taiKhoan.getTenDangNhap();
         lichSuDangNhapRepository.boLienKetTaiKhoan(id);
+        khachHangService.goLienKetTaiKhoan(id);
         try {
             taiKhoanRepository.delete(taiKhoan);
             taiKhoanRepository.flush();   // chạy lệnh DELETE ngay để bắt được lỗi khóa ngoại tại đây
         } catch (DataIntegrityViolationException e) {
             // Ném ngoại lệ -> cả giao dịch bị hủy, kể cả bước gỡ liên kết nhật ký ở trên
-            throw new NghiepVuException("Không thể xóa tài khoản \"" + tenDangNhap + "\" vì đang có dữ liệu liên quan "
-                    + "(đơn hàng, hồ sơ khách hàng...). Hãy khóa tài khoản thay cho việc xóa.");
+            throw new NghiepVuException("Không thể xóa tài khoản \"" + tenDangNhap + "\" vì đang có dữ liệu liên quan. "
+                    + "Hãy khóa tài khoản thay cho việc xóa.");
         }
         boDemDangNhapSai.xoa(tenDangNhap);
     }
 
     // ------------------------------------------------------------------ Hàm dùng chung
+
+    /**
+     * Giữ hồ sơ khách hàng khớp với tài khoản: tài khoản khách hàng luôn có hồ sơ (tạo nếu chưa có);
+     * tài khoản đã có hồ sơ (kể cả khi vừa đổi sang vai trò khác) thì cập nhật họ tên, số điện thoại, email.
+     */
+    private void dongBoHoSoKhachHang(TaiKhoan taiKhoan) {
+        if (laKhachHang(taiKhoan.getVaiTro()) || khachHangService.timTheoTaiKhoan(taiKhoan.getId()).isPresent()) {
+            khachHangService.dongBoTuTaiKhoan(taiKhoan);
+        }
+    }
+
+    private static boolean laKhachHang(VaiTro vaiTro) {
+        return VaiTro.KHACHHANG.equals(vaiTro.getMa());
+    }
 
     private TaiKhoan taoMoi(String tenDangNhap, String matKhau, String hoTen, String email,
                             String soDienThoai, VaiTro vaiTro, boolean kichHoat) {
@@ -277,7 +311,7 @@ public class TaiKhoanService {
 
     private VaiTro timVaiTroTheoMa(String ma) {
         return vaiTroRepository.findByMa(ma)
-                .orElseThrow(() -> new IllegalStateException("Bảng vai_tro chưa có vai trò " + ma));
+                .orElseThrow(() -> new IllegalStateException("Bảng VAI_TRO chưa có vai trò " + ma));
     }
 
     private static boolean laChinhMinh(TaiKhoan taiKhoan, String nguoiThucHien) {

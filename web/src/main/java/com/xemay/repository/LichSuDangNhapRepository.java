@@ -17,7 +17,7 @@ public interface LichSuDangNhapRepository extends JpaRepository<LichSuDangNhap, 
     /** Gỡ liên kết tới tài khoản sắp bị xóa nhưng vẫn giữ lại nhật ký. */
     @Modifying
     @Query("update LichSuDangNhap l set l.taiKhoan = null where l.taiKhoan.id = :taiKhoanId")
-    int boLienKetTaiKhoan(@Param("taiKhoanId") Long taiKhoanId);
+    int boLienKetTaiKhoan(@Param("taiKhoanId") Integer taiKhoanId);
 
     /** Xóa nhật ký cũ hơn thời điểm cho trước (dùng cho tác vụ dọn dẹp định kỳ). */
     @Modifying

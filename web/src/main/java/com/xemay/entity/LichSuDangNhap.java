@@ -11,6 +11,7 @@ import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.Nationalized;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
@@ -22,9 +23,9 @@ import java.time.LocalDateTime;
  * <p>Bản ghi được lưu bằng một tác vụ nền ({@code @Async}) nên không làm chậm việc đăng nhập.
  */
 @Entity
-@Table(name = "lich_su_dang_nhap", indexes = {
-        @Index(name = "IX_lich_su_dang_nhap_thoi_gian", columnList = "thoi_gian"),
-        @Index(name = "IX_lich_su_dang_nhap_ten_dang_nhap", columnList = "ten_dang_nhap")
+@Table(name = "LICH_SU_DANG_NHAP", indexes = {
+        @Index(name = "IX_LICHSU_THOIGIAN", columnList = "ThoiGian"),
+        @Index(name = "IX_LICHSU_TENDANGNHAP", columnList = "TenDangNhap")
 })
 public class LichSuDangNhap {
 
@@ -33,33 +34,36 @@ public class LichSuDangNhap {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "MaLichSu")
     private Long id;
 
     /** Tên đăng nhập người dùng đã gõ - có thể là tên không tồn tại trong hệ thống. */
-    @Column(name = "ten_dang_nhap", nullable = false, length = 100)
+    @Nationalized
+    @Column(name = "TenDangNhap", nullable = false, length = 100)
     private String tenDangNhap;
 
     /** Tài khoản tương ứng; null nếu tên đăng nhập không tồn tại hoặc tài khoản đã bị xóa. */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "tai_khoan_id", foreignKey = @ForeignKey(name = "FK_lich_su_dang_nhap_tai_khoan"))
+    @JoinColumn(name = "MaTaiKhoan", foreignKey = @ForeignKey(name = "FK_LICHSU_TAIKHOAN"))
     @OnDelete(action = OnDeleteAction.SET_NULL)   // xóa tài khoản thì giữ nhật ký, chỉ bỏ liên kết
     private TaiKhoan taiKhoan;
 
-    @Column(name = "thoi_gian", nullable = false)
+    @Column(name = "ThoiGian", nullable = false)
     private LocalDateTime thoiGian;
 
-    @Column(name = "dia_chi_ip", length = 45)
+    @Column(name = "DiaChiIp", length = 45)
     private String diaChiIp;
 
     /** Nơi đăng nhập: {@link #KENH_WEB} hoặc {@link #KENH_SOCKET}. */
-    @Column(name = "kenh", nullable = false, length = 10)
+    @Column(name = "Kenh", nullable = false, length = 10)
     private String kenh;
 
-    @Column(name = "thanh_cong", nullable = false)
+    @Column(name = "ThanhCong", nullable = false)
     private boolean thanhCong;
 
     /** Lý do thất bại (sai mật khẩu, tài khoản bị khóa...). */
-    @Column(name = "ghi_chu", length = 255)
+    @Nationalized
+    @Column(name = "GhiChu", length = 255)
     private String ghiChu;
 
     public Long getId() {

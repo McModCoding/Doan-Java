@@ -17,7 +17,7 @@ import java.util.List;
  * <pre>
  * &#64;GetMapping("/gio-hang")
  * public String gioHang(&#64;AuthenticationPrincipal TaiKhoanDetails nguoiDung, Model model) {
- *     Long taiKhoanId = nguoiDung.getId();   // mã tài khoản của người đang đăng nhập
+ *     Integer taiKhoanId = nguoiDung.getId();   // mã tài khoản (cột MaTaiKhoan) của người đang đăng nhập
  *     ...
  * }
  * </pre>
@@ -26,7 +26,7 @@ public class TaiKhoanDetails implements UserDetails, CredentialsContainer {
 
     private static final long serialVersionUID = 1L;
 
-    private final Long id;
+    private final Integer id;
     private final String tenDangNhap;
     private String matKhau;
     private final String hoTen;
@@ -94,7 +94,7 @@ public class TaiKhoanDetails implements UserDetails, CredentialsContainer {
         this.matKhau = null;
     }
 
-    public Long getId() {
+    public Integer getId() {
         return id;
     }
 
@@ -109,6 +109,11 @@ public class TaiKhoanDetails implements UserDetails, CredentialsContainer {
     /** Tên vai trò để hiển thị, ví dụ "Quản trị viên". */
     public String getTenVaiTro() {
         return tenVaiTro;
+    }
+
+    /** Người dùng có vai trò quản trị viên không (dùng để ẩn/hiện chức năng chỉ quản trị viên được làm). */
+    public boolean laQuanTriVien() {
+        return VaiTro.ADMIN.equals(maVaiTro);
     }
 
     /** Quản trị viên hoặc nhân viên - những người được vào khu vực quản trị và dùng client quản lý kho. */

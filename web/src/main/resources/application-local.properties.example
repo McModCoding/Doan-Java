@@ -5,4 +5,4 @@ spring.datasource.username=sa
 spring.datasource.password=MatKhauSqlServerCuaBan
 
 # Nếu SQL Server của bạn dùng instance có tên (ví dụ SQLEXPRESS) hoặc cổng khác 1433:
-# spring.datasource.url=jdbc:sqlserver://localhost\\SQLEXPRESS;databaseName=QuanLyXeMay;encrypt=true;trustServerCertificate=true
+# spring.datasource.url=jdbc:sqlserver://localhost\\SQLEXPRESS;databaseName=QL_CUAHANG_XEMAY;encrypt=true;trustServerCertificate=true

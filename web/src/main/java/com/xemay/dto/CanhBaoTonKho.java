@@ -15,7 +15,8 @@ import java.util.List;
  */
 public record CanhBaoTonKho(LocalDateTime thoiDiemQuet, int nguong, List<Muc> danhSach) {
 
-    public record Muc(Long id, String tenXe, int soLuongTon) {
+    /** Một xe sắp hết hàng: mã xe, tên kèm hãng, số lượng tồn. */
+    public record Muc(Integer id, String tenXe, int soLuongTon) {
     }
 
     public CanhBaoTonKho {

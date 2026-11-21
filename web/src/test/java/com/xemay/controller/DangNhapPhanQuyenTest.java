@@ -1,8 +1,10 @@
 package com.xemay.controller;
 
 import com.xemay.KiemThuTichHop;
+import com.xemay.entity.KhachHang;
 import com.xemay.entity.TaiKhoan;
 import com.xemay.exception.NghiepVuException;
+import com.xemay.repository.KhachHangRepository;
 import com.xemay.repository.LichSuDangNhapRepository;
 import com.xemay.repository.TaiKhoanRepository;
 import com.xemay.security.BoDemDangNhapSai;
@@ -55,6 +57,9 @@ class DangNhapPhanQuyenTest extends KiemThuTichHop {
 
     @Autowired
     private LichSuDangNhapRepository lichSuDangNhapRepository;
+
+    @Autowired
+    private KhachHangRepository khachHangRepository;
 
     @Autowired
     private TaiKhoanDetailsService taiKhoanDetailsService;
@@ -202,7 +207,8 @@ class DangNhapPhanQuyenTest extends KiemThuTichHop {
                             .param("matKhau", "matkhau1")
                             .param("nhapLaiMatKhau", "matkhau1")
                             .param("hoTen", "Trần Văn Bình")
-                            .param("email", "Binh.Tran@Gmail.com"))
+                            .param("email", "Binh.Tran@Gmail.com")
+                            .param("soDienThoai", "0988000001"))
                     .andExpect(redirectedUrl("/dang-nhap"));
 
             TaiKhoan tk = taiKhoanRepository.findByTenDangNhap("tran.binh").orElseThrow();
@@ -220,7 +226,8 @@ class DangNhapPhanQuyenTest extends KiemThuTichHop {
                             .param("matKhau", "matkhau1")
                             .param("nhapLaiMatKhau", "matkhau1")
                             .param("hoTen", "Người trùng tên")
-                            .param("email", "trungten@kiemthu.vn"))
+                            .param("email", "trungten@kiemthu.vn")
+                            .param("soDienThoai", "0988000002"))
                     .andExpect(status().isOk())
                     .andExpect(model().attributeHasFieldErrorCode("form", "tenDangNhap", "nghiepVu"));
         }
@@ -338,13 +345,13 @@ class DangNhapPhanQuyenTest extends KiemThuTichHop {
         @WithUserDetails("admin")
         @DisplayName("Quản trị viên không thể tự khóa hoặc tự xóa chính mình")
         void khongTuKhoaChinhMinh() {
-            Long adminId = taiKhoanRepository.findByTenDangNhap("admin").orElseThrow().getId();
+            Integer adminId = taiKhoanRepository.findByTenDangNhap("admin").orElseThrow().getId();
             assertThatThrownBy(() -> taiKhoanService.khoa(adminId, "admin")).isInstanceOf(NghiepVuException.class);
             assertThatThrownBy(() -> taiKhoanService.xoa(adminId, "admin")).isInstanceOf(NghiepVuException.class);
         }
 
         @Test
-        @DisplayName("Quản trị viên xóa tài khoản: tài khoản mất, nhật ký đăng nhập của tài khoản đó vẫn còn")
+        @DisplayName("Quản trị viên xóa tài khoản: tài khoản mất, nhật ký đăng nhập và hồ sơ khách hàng vẫn còn")
         void xoaTaiKhoanGiuLichSu() throws Exception {
             TaiKhoan tk = taoKhachHangMoi();
             mockMvc.perform(formLogin("/dang-nhap").user("tenDangNhap", tk.getTenDangNhap()).password("matKhau", "sai"));
@@ -357,6 +364,11 @@ class DangNhapPhanQuyenTest extends KiemThuTichHop {
 
             assertThat(taiKhoanRepository.findById(tk.getId())).isEmpty();
             assertThat(choLichSu(tk.getTenDangNhap(), 1)).isEqualTo(1);
+            // Hồ sơ khách hàng (và đơn hàng nếu có) được giữ lại, chỉ không còn gắn với tài khoản
+            KhachHang hoSo = khachHangRepository.findAll().stream()
+                    .filter(kh -> kh.getSoDienThoai().equals(tk.getSoDienThoai()))
+                    .findFirst().orElseThrow();
+            assertThat(hoSo.getTaiKhoan()).isNull();
         }
     }
 }
