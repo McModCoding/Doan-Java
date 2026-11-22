@@ -15,9 +15,14 @@ public interface GioHangRepository extends JpaRepository<GioHang, Integer> {
 
     Optional<GioHang> findByKhachHang_MaKhachHang(Integer maKhachHang);
 
+    /** Kiểm tra khách đã có giỏ chưa, không khóa gì (đọc xong là nhả). */
+    boolean existsByKhachHang_MaKhachHang(Integer maKhachHang);
+
     /**
      * Đọc giỏ của khách và KHÓA dòng giỏ đến hết giao dịch. Mọi thao tác thay đổi giỏ (thêm, sửa, xóa, đặt hàng)
      * của cùng một khách vì thế chạy lần lượt: bấm "Đặt hàng" hai lần liên tiếp không tạo ra hai đơn.
+     * Trên SQL Server khóa này là {@code WITH (UPDLOCK, HOLDLOCK, ROWLOCK)}: nếu khách CHƯA có giỏ, SQL Server khóa
+     * cả khoảng chỉ mục nơi dòng đó sẽ nằm, nên chỉ gọi sau khi chắc chắn giỏ đã tồn tại (xem GioHangService.khoaGio).
      */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT g FROM GioHang g WHERE g.khachHang.maKhachHang = :maKhachHang")

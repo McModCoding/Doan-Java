@@ -114,20 +114,24 @@ public class GioHangService {
     /**
      * Giỏ của khách, đã KHÓA dòng giỏ đến hết giao dịch (các thao tác trên cùng một giỏ chạy lần lượt).
      * Khách chưa có giỏ thì tạo trong một giao dịch riêng; hai yêu cầu cùng tạo thì chỉ một bản ghi được lưu
-     * (cột MaKhachHang là UNIQUE), yêu cầu còn lại đọc lại giỏ vừa tạo.
+     * (cột MaKhachHang là UNIQUE), yêu cầu còn lại dùng giỏ vừa tạo.
+     *
+     * <p>Phải tạo giỏ TRƯỚC khi khóa. Nếu khóa trước khi có dòng, SQL Server giữ khóa khoảng chỉ mục (HOLDLOCK)
+     * đến hết giao dịch này, lệnh INSERT của giao dịch riêng phải chờ chính giao dịch đang chờ nó: yêu cầu treo mãi.
      */
     GioHang khoaGio(Integer maTaiKhoan) {
         KhachHang kh = khachHangCua(maTaiKhoan)
                 .orElseThrow(() -> new NghiepVuException("Tài khoản chưa có hồ sơ khách hàng."));
-        Optional<GioHang> gio = gioHangRepository.khoaTheoKhachHang(kh.getMaKhachHang());
-        if (gio.isPresent()) return gio.get();
-        try {
-            giaoDichTaoGio.executeWithoutResult(trangThai -> gioHangRepository.saveAndFlush(
-                    new GioHang(khachHangRepository.getReferenceById(kh.getMaKhachHang()))));
-        } catch (DataIntegrityViolationException e) {
-            // Yêu cầu khác vừa tạo giỏ cho cùng khách: dùng giỏ đó
+        Integer maKhachHang = kh.getMaKhachHang();
+        if (!gioHangRepository.existsByKhachHang_MaKhachHang(maKhachHang)) {
+            try {
+                giaoDichTaoGio.executeWithoutResult(trangThai -> gioHangRepository.saveAndFlush(
+                        new GioHang(khachHangRepository.getReferenceById(maKhachHang))));
+            } catch (DataIntegrityViolationException e) {
+                // Yêu cầu khác vừa tạo giỏ cho cùng khách: dùng giỏ đó
+            }
         }
-        return gioHangRepository.khoaTheoKhachHang(kh.getMaKhachHang())
+        return gioHangRepository.khoaTheoKhachHang(maKhachHang)
                 .orElseThrow(() -> new NghiepVuException("Không tạo được giỏ hàng, vui lòng thử lại."));
     }
 
