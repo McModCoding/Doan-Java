@@ -50,7 +50,10 @@ public class SecurityConfig {
                         // (1) Ai cũng xem được, không cần đăng nhập
                         .requestMatchers("/css/**", "/js/**", "/images/**", "/fonts/**", "/webjars/**", "/favicon.ico").permitAll()
                         .requestMatchers("/", "/dang-nhap", "/dang-ky", "/error").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/xe-may/**", "/hang-xe/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/xe-may", "/xe-may/**", "/hang-xe/**").permitAll()
+
+                        // Giỏ hàng chỉ dành cho KHACHHANG, mọi thay đổi dùng POST + CSRF
+                        .requestMatchers("/gio-hang", "/gio-hang/**").hasRole(VaiTro.KHACHHANG)
 
                         // (2) Khu vực quản trị: quy tắc cụ thể hơn phải đặt TRƯỚC quy tắc chung
                         .requestMatchers("/quan-tri/tai-khoan/**", "/quan-tri/lich-su-dang-nhap/**").hasRole(VaiTro.ADMIN)

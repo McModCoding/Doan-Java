@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: trang(~{::title}, ~{::section})}">
+<head><title>Danh sách xe | MotoStore</title></head>
+<body><section>
+    <nav aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a th:href="@{/}">Trang chủ</a></li><li class="breadcrumb-item active" aria-current="page">Danh sách xe</li></ol></nav>
+    <div class="moto-page-heading mb-4"><h1 class="mb-2">Danh sách xe máy</h1><p class="text-secondary mb-0">Tìm mẫu xe theo tên, mức giá và tình trạng còn hàng.</p></div>
+    <form method="get" th:action="@{/xe-may}" class="moto-filters card card-body mb-4" role="search">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-5"><label class="form-label" for="tuKhoa">Tên xe</label><input class="form-control" id="tuKhoa" type="search" name="q" maxlength="100" placeholder="Ví dụ: Honda Vision" th:value="${q}"></div>
+            <div class="col-6 col-md-2"><label class="form-label" for="giaTu">Giá từ</label><input class="form-control" id="giaTu" type="number" name="giaTu" min="0" step="100000" placeholder="VNĐ" th:value="${giaTu}"></div>
+            <div class="col-6 col-md-2"><label class="form-label" for="giaDen">Giá đến</label><input class="form-control" id="giaDen" type="number" name="giaDen" min="0" step="100000" placeholder="VNĐ" th:value="${giaDen}"></div>
+            <div class="col-md-3"><label class="form-label" for="sapXep">Sắp xếp</label><select class="form-select" name="sapXep" id="sapXep"><option value="moi" th:selected="${sapXep=='moi'}">Mới thêm</option><option value="gia-tang" th:selected="${sapXep=='gia-tang'}">Giá tăng dần</option><option value="gia-giam" th:selected="${sapXep=='gia-giam'}">Giá giảm dần</option><option value="ten" th:selected="${sapXep=='ten'}">Theo tên xe</option></select></div>
+            <div class="col-md-8"><div class="form-check"><input class="form-check-input" type="checkbox" id="conHang" name="conHang" value="true" th:checked="${conHang}"><label class="form-check-label" for="conHang">Chỉ xem xe còn hàng</label></div></div>
+            <div class="col-md-4 d-flex gap-2 justify-content-md-end"><a class="btn btn-outline-secondary" th:href="@{/xe-may}">Bỏ lọc</a><button class="btn btn-primary" type="submit">Tìm xe</button></div>
+        </div>
+    </form>
+    <div class="alert alert-warning" th:if="${loiBoLoc}" th:text="${loiBoLoc}"></div>
+    <div class="d-flex justify-content-between align-items-center mb-3"><p class="small text-secondary mb-0" th:text="|Tìm thấy ${ds.totalElements} mẫu xe|">Số xe</p></div>
+    <div class="row g-3" th:if="${ds.hasContent()}">
+        <div class="col-sm-6 col-lg-4" th:each="xe : ${ds.content}"><div th:replace="~{fragments/the-xe :: theXe(${xe})}"></div></div>
+    </div>
+    <div th:unless="${ds.hasContent()}" class="text-center p-5 border rounded"><i class="bi bi-search display-5 text-secondary"></i><h2 class="h5 mt-3">Không tìm thấy xe phù hợp</h2><p class="text-secondary">Bạn hãy thử từ khóa hoặc khoảng giá khác.</p><a class="btn btn-outline-secondary" th:href="@{/xe-may}">Xem tất cả xe</a></div>
+    <nav th:if="${ds.totalPages > 1}" aria-label="Chuyển trang xe" class="mt-4">
+        <ul class="pagination justify-content-center flex-wrap">
+            <li class="page-item" th:classappend="${ds.first}?'disabled'"><a class="page-link" th:href="@{/xe-may(q=${q},giaTu=${giaTu},giaDen=${giaDen},conHang=${conHang},sapXep=${sapXep},page=${ds.number-1})}">Trước</a></li>
+            <li class="page-item" th:each="i : ${#numbers.sequence(0,ds.totalPages-1)}" th:classappend="${i == ds.number}?'active'"><a class="page-link" th:href="@{/xe-may(q=${q},giaTu=${giaTu},giaDen=${giaDen},conHang=${conHang},sapXep=${sapXep},page=${i})}" th:text="${i+1}">1</a></li>
+            <li class="page-item" th:classappend="${ds.last}?'disabled'"><a class="page-link" th:href="@{/xe-may(q=${q},giaTu=${giaTu},giaDen=${giaDen},conHang=${conHang},sapXep=${sapXep},page=${ds.number+1})}">Sau</a></li>
+        </ul>
+    </nav>
+</section></body></html>

@@ -1,0 +1,28 @@
+/* Giao diện khách hàng độc lập để ghép với theme của nhóm. */
+.moto-hero{background:#f6f7f8;border:1px solid #e9eaec;border-radius:16px;padding:clamp(24px,4vw,48px);margin:8px 0 0}
+.moto-hero h1{max-width:590px}.moto-hero .lead{font-size:1.05rem;color:#4b5563;max-width:560px}
+.moto-eyebrow{color:#a10d28;font-size:.76rem;letter-spacing:.1em;font-weight:700}
+.moto-hero-art{background:white;min-height:240px;border:1px solid #e6e6e6;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;padding:22px}
+.moto-hero-symbol{width:112px;height:112px;display:grid;place-items:center;border-radius:50%;background:#fbe9ec;color:#b30e2b;font-size:54px}
+.moto-hero-caption{font-weight:650;color:#171717}
+.moto-quick-item{border:1px solid #e7e9ed;border-radius:10px;padding:20px;display:flex;align-items:center;gap:16px;height:100%}
+.moto-quick-item>i{font-size:27px;color:#ba1130}
+.moto-page-heading{border-bottom:1px solid #e7e9ed;padding-bottom:20px}
+.the-xe-khach{border:1px solid #e6e8eb;overflow:hidden;box-shadow:none;transition:transform .16s ease, box-shadow .16s ease}
+.the-xe-khach:hover{transform:translateY(-2px);box-shadow:0 8px 22px #17202e10}
+.the-xe-khach .card-body{padding:20px}
+.anh-xe-khach{display:flex;align-items:center;justify-content:center;height:208px;background:#f6f7f8;overflow:hidden;text-decoration:none}
+.anh-xe-khach img,.moto-detail-photo img{width:100%;height:100%;object-fit:contain;padding:12px}
+.anh-trong{height:100%;width:100%;flex-direction:column;align-items:center;justify-content:center;gap:9px;text-align:center;padding:15px;color:#737b86;background:#f6f7f8}
+.anh-trong i{font-size:30px}.anh-trong span{font-size:.83rem}.anh-trong small{font-size:.75rem}
+.anh-trong:not([hidden]){display:flex}.anh-trong[hidden]{display:none!important}
+.moto-filters{background:#fbfbfc;border-color:#e7e9ed}
+.moto-detail-photo{height:420px;display:flex;align-items:center;justify-content:center;border:1px solid #e9eaee;background:#f6f7f8;border-radius:12px;overflow:hidden}
+.moto-detail-spec{border-top:1px solid #e7e9ed;border-bottom:1px solid #e7e9ed}
+.moto-detail-spec>div{display:flex;justify-content:space-between;gap:20px;padding:12px 0;border-bottom:1px solid #eeeeef}
+.moto-detail-spec>div:last-child{border-bottom:0}.moto-detail-spec span{color:#666}
+.moto-quantity{width:85px}.moto-cart-line{display:flex;gap:16px;align-items:center;border-bottom:1px solid #eceef0}
+.moto-cart-line:last-child{border:0}.moto-cart-thumb{flex:0 0 106px;max-width:106px;height:100px;border-radius:9px;background:#f6f7f8;overflow:hidden}
+.moto-cart-thumb img{width:100%;height:100%;object-fit:contain}.moto-cart-thumb .anh-trong i{font-size:21px}
+.min-width-0{min-width:0}
+@media(max-width:575.98px){.moto-hero{padding:23px 19px}.moto-detail-photo{height:270px}.moto-cart-line{flex-wrap:wrap}.moto-cart-line>div:last-child{width:100%;text-align:left!important;padding-left:122px}}

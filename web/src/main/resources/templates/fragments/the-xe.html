@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<body>
+<article th:fragment="theXe(xe)" class="card h-100 the-xe-khach">
+    <a class="anh-xe-khach" th:href="@{/xe-may/{id}(id=${xe.id()})}" th:aria-label="|Xem thông tin ${xe.tenXe()}|">
+        <img th:src="${xe.anh()}" th:alt="|Hình xe ${xe.tenXe()}|" loading="lazy"
+             onerror="this.hidden=true;this.nextElementSibling.hidden=false" />
+        <div class="anh-trong" hidden>
+            <i class="bi bi-image" aria-hidden="true"></i>
+            <span>Chưa có ảnh thực tế</span>
+            <small th:text="${xe.tenXe()}">Tên xe</small>
+        </div>
+    </a>
+    <div class="card-body d-flex flex-column">
+        <p class="text-secondary small mb-1" th:text="${xe.hangXe()}">Hãng xe</p>
+        <h3 class="h5 mb-2"><a class="text-decoration-none text-body" th:href="@{/xe-may/{id}(id=${xe.id()})}" th:text="${xe.tenXe()}">Tên mẫu xe</a></h3>
+        <div class="mt-auto">
+            <div class="gia mb-2" th:text="|${#numbers.formatDecimal(xe.giaBan(),1,'POINT',0,'COMMA')} đ|">0 đ</div>
+            <p class="small mb-3" th:if="${xe.conHang()}"><span class="badge bg-success-subtle text-success-emphasis">Còn hàng</span>
+                <span class="text-secondary" th:text="|(${xe.soLuongTon()} xe)|">(0 xe)</span></p>
+            <p class="small mb-3" th:unless="${xe.conHang()}"><span class="badge bg-secondary-subtle text-secondary-emphasis">Tạm hết hàng</span></p>
+            <div class="d-grid gap-2">
+                <a class="btn btn-outline-secondary btn-sm" th:href="@{/xe-may/{id}(id=${xe.id()})}">Xem chi tiết</a>
+                <form method="post" th:action="@{/gio-hang/them}" sec:authorize="hasRole('KHACHHANG')">
+                    <input type="hidden" name="xeId" th:value="${xe.id()}">
+                    <input type="hidden" name="soLuong" value="1">
+                    <button class="btn btn-primary btn-sm w-100" type="submit" th:disabled="${!xe.conHang()}"><i class="bi bi-cart-plus"></i> Thêm vào giỏ</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</article>
+</body></html>

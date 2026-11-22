@@ -1,17 +1,17 @@
 package com.xemay.controller;
 
+import com.xemay.service.GiaoDienXeService;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 
-/**
- * Trang chủ TẠM THỜI để có nơi đứng sau khi đăng nhập.
- * Thành viên phụ trách giao diện thay nội dung templates/index.html (và lớp này nếu cần) bằng trang chủ thật.
- */
 @Controller
 public class TrangChuController {
-
+    private final GiaoDienXeService xeService;
+    public TrangChuController(GiaoDienXeService xeService){this.xeService=xeService;}
     @GetMapping("/")
-    public String trangChu() {
+    public String trangChu(Model model) {
+        model.addAttribute("noiBat",xeService.noiBat());
         return "index";
     }
 }

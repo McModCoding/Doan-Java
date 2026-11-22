@@ -77,6 +77,33 @@ public interface XeMayRepository extends JpaRepository<XeMay, Integer> {
     @Query("SELECT DISTINCT x.loaiXe FROM XeMay x ORDER BY x.loaiXe")
     List<String> danhSachLoaiXe();
 
+    // ------------------------------------------------------------------ Trang cho khách (thành viên 2)
+
+    /**
+     * Tìm xe đang bán cho trang danh sách của khách: theo tên xe hoặc tên hãng ("Honda Vision" cũng tìm được),
+     * khoảng giá, chỉ xe còn hàng. {@code q} đã đổi sang chữ thường; chuỗi rỗng là không lọc theo tên.
+     */
+    @EntityGraph(attributePaths = "hangXe")
+    @Query("""
+        SELECT x FROM XeMay x JOIN x.hangXe h
+        WHERE x.trangThai = true
+        AND (:q = '' OR LOWER(x.tenXe) LIKE CONCAT('%', :q, '%')
+             OR LOWER(h.tenHang) LIKE CONCAT('%', :q, '%')
+             OR LOWER(CONCAT(h.tenHang, ' ', x.tenXe)) LIKE CONCAT('%', :q, '%'))
+        AND (:giaTu IS NULL OR x.giaBan >= :giaTu)
+        AND (:giaDen IS NULL OR x.giaBan <= :giaDen)
+        AND (:conHang = false OR x.soLuong > 0)
+    """)
+    Page<XeMay> timXeChoKhach(@Param("q") String q,
+                              @Param("giaTu") BigDecimal giaTu,
+                              @Param("giaDen") BigDecimal giaDen,
+                              @Param("conHang") boolean conHang,
+                              Pageable pageable);
+
+    /** Xe đang bán, có phân trang (trang chủ lấy các xe mới thêm). */
+    @EntityGraph(attributePaths = "hangXe")
+    Page<XeMay> findByTrangThaiTrue(Pageable pageable);
+
     // ------------------------------------------------------------------ Tồn kho, client Socket
 
     @EntityGraph(attributePaths = "hangXe")

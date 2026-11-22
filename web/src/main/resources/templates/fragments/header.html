@@ -39,19 +39,12 @@
                     <li class="nav-item">
                         <a class="nav-link" th:href="@{/}" th:classappend="${@duongDan.laTrang('/')} ? 'active'">Trang chủ</a>
                     </li>
-                    <!--/* Thành viên phụ trách giao diện: bỏ chú thích khi trang /xe-may đã làm xong
                     <li class="nav-item">
-                        <a class="nav-link" th:href="@{/xe-may}" th:classappend="${@duongDan.dangO('/xe-may')} ? 'active'">Xe máy</a>
+                        <a class="nav-link" th:href="@{/xe-may}" th:classappend="${@duongDan.dangO('/xe-may')} ? 'active'">Danh sách xe</a>
                     </li>
-                    */-->
-                    <!--/* Thành viên phụ trách giỏ hàng, đặt hàng: bỏ chú thích khi đã làm xong
                     <li class="nav-item" sec:authorize="hasRole('KHACHHANG')">
                         <a class="nav-link" th:href="@{/gio-hang}" th:classappend="${@duongDan.dangO('/gio-hang')} ? 'active'">Giỏ hàng</a>
                     </li>
-                    <li class="nav-item" sec:authorize="hasRole('KHACHHANG')">
-                        <a class="nav-link" th:href="@{/don-hang}" th:classappend="${@duongDan.dangO('/don-hang')} ? 'active'">Đơn hàng của tôi</a>
-                    </li>
-                    */-->
                     <li class="nav-item">
                         <a class="nav-link" href="#lien-he">Liên hệ</a>
                     </li>

@@ -1,42 +1,41 @@
 <!DOCTYPE html>
-<!--/*
-    TRANG CHỦ TẠM THỜI - để có nơi đứng sau khi đăng nhập và thử phần menu theo vai trò.
-    Thành viên phụ trách giao diện thay nội dung thẻ <section> bằng trang chủ thật theo quy chuẩn giao diện
-    (ảnh bìa, xe nổi bật dạng thẻ .the-xe, hãng xe...), giữ nguyên dòng th:replace bên dưới.
-*/-->
 <html lang="vi" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
       th:replace="~{fragments/layout :: trang(~{::title}, ~{::section})}">
-<head><title th:text="#{cuahang.ten} + ' | Đại lý xe máy chính hãng'">Web Xe Máy | Đại lý xe máy chính hãng</title></head>
-<body>
-<section>
-    <div class="row g-4 align-items-center">
+<head><title>MotoStore | Cửa hàng xe máy</title></head>
+<body><section>
+    <div class="moto-hero row g-4 align-items-center mb-5">
         <div class="col-lg-7">
-            <h1 th:text="#{cuahang.ten}">Web Xe Máy</h1>
-            <p class="dau-trang-mo-ta mb-4" th:text="#{cuahang.mo-ta}">Mô tả cửa hàng</p>
-
-            <div sec:authorize="isAnonymous()" class="d-flex flex-wrap gap-2">
-                <a class="btn btn-primary" th:href="@{/dang-nhap}">Đăng nhập</a>
-                <a class="btn btn-outline-secondary" th:href="@{/dang-ky}">Tạo tài khoản</a>
-            </div>
-
-            <div sec:authorize="isAuthenticated()">
-                <p class="mb-3">Xin chào <strong sec:authentication="principal.hoTen">Họ tên</strong>
-                    (<span sec:authentication="principal.tenVaiTro">vai trò</span>).</p>
-                <div class="d-flex flex-wrap gap-2">
-                    <a sec:authorize="hasAnyRole('ADMIN', 'NHANVIEN')" class="btn btn-primary" th:href="@{/quan-tri}">Vào trang quản trị</a>
-                    <a class="btn btn-outline-secondary" th:href="@{/tai-khoan}">Tài khoản của tôi</a>
-                </div>
+            <p class="moto-eyebrow mb-2">MOTOSTORE · XE MÁY CHO MỌI HÀNH TRÌNH</p>
+            <h1 class="display-5 fw-bold mb-3">Chọn chiếc xe phù hợp với bạn</h1>
+            <p class="lead mb-4">Khám phá các mẫu xe đang được cửa hàng quản lý. Thông tin giá và số lượng lấy trực tiếp từ hệ thống.</p>
+            <div class="d-flex flex-wrap gap-2">
+                <a class="btn btn-primary" th:href="@{/xe-may}">Xem danh sách xe <i class="bi bi-arrow-right"></i></a>
+                <a class="btn btn-outline-secondary" sec:authorize="isAnonymous()" th:href="@{/dang-ky}">Tạo tài khoản</a>
+                <a class="btn btn-outline-secondary" sec:authorize="hasRole('KHACHHANG')" th:href="@{/gio-hang}">Xem giỏ hàng</a>
+                <a class="btn btn-outline-secondary" sec:authorize="hasAnyRole('ADMIN','NHANVIEN')" th:href="@{/quan-tri}">Quản lý cửa hàng</a>
             </div>
         </div>
         <div class="col-lg-5">
-            <div class="card">
-                <div class="card-body">
-                    <p class="fw-semibold text-body-emphasis mb-2">Trang chủ đang được xây dựng</p>
-                    <p class="chu-phu mb-0">Danh sách xe, chi tiết xe và giỏ hàng sẽ xuất hiện ở đây khi các phần của nhóm được ghép vào.</p>
-                </div>
+            <div class="moto-hero-art" aria-label="Thông tin cửa hàng">
+                <div class="moto-hero-symbol"><i class="bi bi-bicycle" aria-hidden="true"></i></div>
+                <div class="moto-hero-caption">Tìm xe • Xem giá • Thêm vào giỏ</div>
+                <p class="small text-secondary mb-0">Giao diện demo của nhóm sinh viên Công nghệ Java</p>
             </div>
         </div>
     </div>
-</section>
-</body>
-</html>
+    <div class="row g-3 moto-quick mb-5">
+        <div class="col-md-4"><div class="moto-quick-item"><i class="bi bi-search"></i><div><strong>Tìm xe dễ dàng</strong><div class="small text-secondary">Tìm theo tên và khoảng giá</div></div></div></div>
+        <div class="col-md-4"><div class="moto-quick-item"><i class="bi bi-shield-check"></i><div><strong>Thông tin rõ ràng</strong><div class="small text-secondary">Hiển thị giá và lượng tồn kho</div></div></div></div>
+        <div class="col-md-4"><div class="moto-quick-item"><i class="bi bi-bag"></i><div><strong>Giỏ hàng tiện lợi</strong><div class="small text-secondary">Lưu lựa chọn trong phiên đăng nhập</div></div></div></div>
+    </div>
+    <div class="d-flex align-items-center justify-content-between gap-2 mb-3">
+        <div><h2 class="h3 mb-1">Một số mẫu xe tại cửa hàng</h2><p class="text-secondary mb-0">Danh sách được cập nhật từ cơ sở dữ liệu</p></div>
+        <a th:href="@{/xe-may}" class="btn btn-outline-secondary btn-sm">Xem tất cả</a>
+    </div>
+    <div class="row g-3 mb-4" th:if="${!noiBat.isEmpty()}">
+        <div class="col-sm-6 col-lg-4" th:each="xe : ${noiBat}">
+            <div th:replace="~{fragments/the-xe :: theXe(${xe})}"></div>
+        </div>
+    </div>
+    <div class="alert alert-info" th:if="${noiBat.isEmpty()}">Chưa có dữ liệu xe. Nhóm cần thêm dữ liệu từ phần quản lý xe máy.</div>
+</section></body></html>

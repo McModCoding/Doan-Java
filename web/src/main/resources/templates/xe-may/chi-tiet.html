@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:replace="~{fragments/layout :: trang(~{::title}, ~{::section})}">
+<head><title th:text="${xe.tenXe()} + ' | MotoStore'">Chi tiết xe</title></head>
+<body><section>
+    <nav aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a th:href="@{/}">Trang chủ</a></li><li class="breadcrumb-item"><a th:href="@{/xe-may}">Xe máy</a></li><li class="breadcrumb-item active" aria-current="page" th:text="${xe.tenXe()}">Xe</li></ol></nav>
+    <div class="row g-4 g-lg-5 mt-2">
+        <div class="col-md-6">
+            <div class="moto-detail-photo">
+                <img th:src="${xe.anh()}" th:alt="|Ảnh mẫu xe ${xe.tenXe()}|" onerror="this.hidden=true;this.nextElementSibling.hidden=false">
+                <div class="anh-trong" hidden><i class="bi bi-image"></i><span>Ảnh xe đang được cập nhật</span><small th:text="${xe.tenXe()}"></small></div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <p class="text-secondary small mb-2" th:text="${xe.hangXe()}">Hãng</p>
+            <h1 class="mb-3" th:text="${xe.tenXe()}">Tên xe</h1>
+            <p class="gia fs-2 mb-3" th:text="|${#numbers.formatDecimal(xe.giaBan(),1,'POINT',0,'COMMA')} đ|">0 đ</p>
+            <p><span th:if="${xe.conHang()}" class="badge bg-success-subtle text-success-emphasis">Còn hàng</span><span th:unless="${xe.conHang()}" class="badge bg-secondary-subtle text-secondary-emphasis">Tạm hết hàng</span> <span class="ms-2 text-secondary small" th:text="|Tồn kho: ${xe.soLuongTon()} xe|"></span></p>
+            <div class="moto-detail-spec mb-4">
+                <div><span>Mã sản phẩm</span><strong th:text="${xe.id()}"></strong></div>
+                <div><span>Loại xe</span><strong th:text="${xe.loaiXe()}"></strong></div>
+                <div><span>Hãng xe</span><strong th:text="${xe.hangXe()}"></strong></div>
+            </div>
+            <div class="alert alert-light border" th:text="${xe.moTa()}">Mô tả xe</div>
+            <form method="post" th:action="@{/gio-hang/them}" sec:authorize="hasRole('KHACHHANG')" class="d-flex gap-2 align-items-end flex-wrap mb-3">
+                <input type="hidden" name="xeId" th:value="${xe.id()}">
+                <div><label class="form-label" for="soLuong">Số lượng</label><input class="form-control moto-quantity" name="soLuong" id="soLuong" type="number" min="1" max="20" value="1" required></div>
+                <button class="btn btn-primary" type="submit" th:disabled="${!xe.conHang()}"><i class="bi bi-cart-plus"></i> Thêm vào giỏ hàng</button>
+            </form>
+            <p sec:authorize="isAnonymous()" class="small text-secondary">Vui lòng <a th:href="@{/dang-nhap}">đăng nhập</a> bằng tài khoản khách hàng để thêm sản phẩm vào giỏ.</p>
+            <a th:href="@{/xe-may}" class="btn btn-outline-secondary">Quay lại danh sách xe</a>
+        </div>
+    </div>
+</section></body></html>
