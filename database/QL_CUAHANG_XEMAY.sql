@@ -11,6 +11,7 @@
     - 3 khach mua tai cua hang chua co tai khoan (MaTaiKhoan = NULL)
     - Sua loi: KHACH_HANG.MaTaiKhoan "NULL UNIQUE" chi cho 1 dong NULL -> doi sang chi muc co dieu kien
     - SET QUOTED_IDENTIFIER ON de chay duoc ca bang sqlcmd (cot tinh toan PERSISTED can tuy chon nay)
+    - Kho tru ngay luc khach dat hang; sp_XacNhanDonHang chi doi trang thai va tao hoa don (khong tru kho lan hai)
   Ung dung chay voi spring.jpa.hibernate.ddl-auto=validate: Entity phai khop dung voi script nay.
 */
 -- [Tich hop] Bat buoc cho cot tinh toan PERSISTED (ThanhTien). SSMS bat san, sqlcmd thi khong.
@@ -277,9 +278,15 @@ FROM dbo.DON_HANG;
 UPDATE d SET TongTien=x.Tong
 FROM dbo.DON_HANG d
 CROSS APPLY(SELECT SUM(ThanhTien) Tong FROM dbo.CHI_TIET_DON_HANG c WHERE c.MaDonHang=d.MaDonHang)x;
+-- [Tich hop] Don mau tru kho ngay luc dat, giong don dat tren web (ton kho mau sau script khong doi)
+UPDATE x SET SoLuong=x.SoLuong-c.SoLuong
+FROM dbo.XE_MAY x JOIN dbo.CHI_TIET_DON_HANG c ON c.MaXe=x.MaXe;
 GO
 
 /* Xac nhan don: khoa don va dong xe, tru ton, tao hoa don/chi tiet trong mot transaction */
+/* [Tich hop] Kho da tru ngay luc khach dat hang (DatHangService, nhu ban demo gio hang cua nhom).
+   Procedure khong kiem tra, khong tru ton lan nua: neu tru o day thi don dat tren web bi tru kho hai lan.
+   Van khoa dong don hang (UPDLOCK, HOLDLOCK): hai nguoi cung xac nhan mot don thi chi mot nguoi thanh cong. */
 CREATE PROCEDURE dbo.sp_XacNhanDonHang @MaDonHang INT
 AS
 BEGIN
@@ -294,6 +301,7 @@ BEGIN
   IF @TrangThai<>'CHO_XAC_NHAN' THROW 50002,N'Đơn hàng không ở trạng thái chờ xác nhận.',1;
   IF NOT EXISTS(SELECT 1 FROM dbo.CHI_TIET_DON_HANG WHERE MaDonHang=@MaDonHang)
     THROW 50003,N'Đơn hàng chưa có sản phẩm.',1;
+  /* [Tich hop] Bo kiem tra va tru ton kho (da tru luc dat hang):
   IF EXISTS(
     SELECT 1 FROM dbo.CHI_TIET_DON_HANG c
     JOIN dbo.XE_MAY x WITH(UPDLOCK,HOLDLOCK) ON x.MaXe=c.MaXe
@@ -303,6 +311,7 @@ BEGIN
   UPDATE x SET SoLuong=x.SoLuong-c.SoLuong
   FROM dbo.XE_MAY x JOIN dbo.CHI_TIET_DON_HANG c ON c.MaXe=x.MaXe
   WHERE c.MaDonHang=@MaDonHang;
+  */
 
   UPDATE dbo.DON_HANG
   SET TongTien=(SELECT SUM(ThanhTien) FROM dbo.CHI_TIET_DON_HANG WHERE MaDonHang=@MaDonHang),
@@ -407,5 +416,6 @@ GO
   - Khi xac nhan don, app nen goi procedure nay trong transaction/service,
     khong tu tru kho o Controller.
   - [Tich hop] Trong ung dung Java, so luong ton (XE_MAY.SoLuong) chi duoc thay doi qua
-    TonKhoService (khoa dong bang PESSIMISTIC_WRITE, cung kieu khoa UPDLOCK nhu procedure tren).
+    TonKhoService (khoa dong bang PESSIMISTIC_WRITE, tuong tu UPDLOCK trong SQL Server).
+    Dat hang tru kho ngay (DatHangService); huy don thi tra hang bang TonKhoService.nhapKho.
 */

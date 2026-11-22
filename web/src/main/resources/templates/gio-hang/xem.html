@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: trang(~{::title}, ~{::section})}">
+<head><title>Giỏ hàng | MotoStore</title></head>
+<body><section>
+    <nav aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a th:href="@{/}">Trang chủ</a></li><li class="breadcrumb-item active">Giỏ hàng</li></ol></nav>
+    <div class="moto-page-heading mb-4"><h1 class="mb-2">Giỏ hàng của bạn</h1><p class="text-secondary mb-0">Đây là danh sách xe bạn đang chọn, chưa phải đơn hàng đã đặt.</p></div>
+    <div th:if="${gio.rong()}" class="text-center p-5 border rounded"><i class="bi bi-cart3 display-5 text-secondary"></i><h2 class="h5 mt-3">Giỏ hàng đang trống</h2><p class="text-secondary">Hãy chọn một mẫu xe từ danh sách.</p><a class="btn btn-primary" th:href="@{/xe-may}">Xem xe máy</a></div>
+    <div class="row g-4" th:unless="${gio.rong()}">
+        <div class="col-lg-8">
+            <div class="card"><div class="card-body p-0"><div class="moto-cart-line p-3" th:each="m : ${gio.dsMatHang()}">
+                <a class="moto-cart-thumb" th:href="@{/xe-may/{id}(id=${m.xe().id()})}"><img th:src="${m.xe().anh()}" th:alt="${m.xe().tenXe()}" loading="lazy" onerror="this.hidden=true;this.nextElementSibling.hidden=false"><div class="anh-trong" hidden><i class="bi bi-image"></i></div></a>
+                <div class="flex-grow-1 min-width-0">
+                    <a class="fw-semibold text-decoration-none text-body" th:href="@{/xe-may/{id}(id=${m.xe().id()})}" th:text="${m.xe().tenXe()}">Tên xe</a>
+                    <div class="small text-secondary mb-2" th:text="|Đơn giá: ${#numbers.formatDecimal(m.xe().giaBan(),1,'POINT',0,'COMMA')} đ|">Đơn giá</div>
+                    <p th:if="${m.soLuong() > m.xe().soLuongTon()}" class="small text-danger">Số xe trong giỏ lớn hơn tồn kho hiện tại; hãy điều chỉnh.</p>
+                    <div class="d-flex flex-wrap gap-2 align-items-center">
+                        <form method="post" th:action="@{/gio-hang/cap-nhat}" class="d-flex gap-2 align-items-center">
+                            <input type="hidden" name="xeId" th:value="${m.xe().id()}">
+                            <label class="visually-hidden" th:for="|sl${m.xe().id()}|">Số lượng</label>
+                            <input class="form-control moto-quantity" type="number" min="0" max="20" name="soLuong" th:id="|sl${m.xe().id()}|" th:value="${m.soLuong()}" required>
+                            <button class="btn btn-outline-secondary btn-sm" type="submit">Cập nhật</button>
+                        </form>
+                        <form method="post" th:action="@{/gio-hang/xoa}"><input type="hidden" name="xeId" th:value="${m.xe().id()}"><button type="submit" class="btn btn-link btn-sm text-danger">Xóa</button></form>
+                    </div>
+                </div>
+                <div class="text-end fw-semibold text-nowrap" th:text="|${#numbers.formatDecimal(m.thanhTien(),1,'POINT',0,'COMMA')} đ|">Thành tiền</div>
+            </div></div></div>
+        </div>
+        <div class="col-lg-4"><div class="card"><div class="card-body"><h2 class="h5 mb-3">Tạm tính</h2><div class="d-flex justify-content-between mb-2"><span>Số xe đã chọn</span><strong th:text="${gio.soLuongXe()}">0</strong></div><hr><div class="d-flex justify-content-between align-items-center mb-3"><span>Tổng tiền</span><strong class="gia" th:text="|${#numbers.formatDecimal(gio.tongTien(),1,'POINT',0,'COMMA')} đ|">0 đ</strong></div><form method="post" th:action="@{/gio-hang/dat-hang}" class="mb-3"><label class="form-label" for="diaChiGiaoHang">Địa chỉ giao xe</label><textarea class="form-control mb-2" id="diaChiGiaoHang" name="diaChiGiaoHang" rows="2" maxlength="255" required th:text="${diaChiMacDinh}"></textarea><label class="form-label" for="ghiChu">Ghi chú</label><input class="form-control mb-3" id="ghiChu" name="ghiChu" maxlength="500" placeholder="Ví dụ: gọi trước khi giao"><button class="btn btn-primary w-100" type="submit"><i class="bi bi-bag-check"></i> Đặt hàng</button></form><a class="btn btn-outline-secondary w-100" th:href="@{/xe-may}">Tiếp tục xem xe</a></div></div></div>
+    </div>
+</section></body></html>
