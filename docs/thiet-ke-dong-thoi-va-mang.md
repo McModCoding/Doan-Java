@@ -71,7 +71,8 @@ nhìn log là biết đoạn mã nào đang chạy trên luồng nào.
 
 | Tài nguyên dùng chung | Ai cùng truy cập | Nếu không đồng bộ | Cách đồng bộ |
 |---|---|---|---|
-| Cột `SoLuong` của bảng `XE_MAY` | Luồng Tomcat (đặt hàng, nhập kho trên web), luồng `kho-client-N` (nhập/xuất kho), procedure `sp_XacNhanDonHang` | Mất cập nhật, bán vượt số xe đang có | **Khóa bi quan JPA** `PESSIMISTIC_WRITE` (`TonKhoService`) |
+| Cột `SoLuong` của bảng `XE_MAY` | Luồng Tomcat (khách đặt hàng, nhân viên nhập kho trên web), luồng `kho-client-N` (nhập/xuất kho) | Mất cập nhật, bán vượt số xe đang có | **Khóa bi quan JPA** `PESSIMISTIC_WRITE` (`TonKhoService`) |
+| Giỏ hàng của một khách (`GIO_HANG`, `CHI_TIET_GIO_HANG`) | Nhiều tab, nhiều lần bấm của cùng một khách: thêm, sửa, xóa, đặt hàng | Bấm "Đặt hàng" hai lần thành hai đơn, trừ kho hai lần | Khóa dòng giỏ trước mọi thao tác (`GioHangRepository.khoaTheoKhachHang`), mục 3.5 |
 | Cột `SoLuong` khi nhân viên sửa thông tin xe | Luồng sửa xe và luồng bán xe | Câu UPDATE của form sửa ghi lại số tồn cũ, xóa mất lần bán xen giữa | Form sửa không nhận số lượng + `@DynamicUpdate`: UPDATE chỉ ghi cột đã đổi (mục 3.4) |
 | Số điện thoại khách hàng | Hai người đăng ký, hoặc nhân viên nhập khách, cùng một số điện thoại | Hai hồ sơ trùng số | Chỉ mục `UNIQUE` của `KHACH_HANG.SoDienThoai` + bắt `DataIntegrityViolationException`; tài khoản và hồ sơ cùng một giao dịch |
 | Bộ đếm đăng nhập sai (bộ nhớ) | Luồng Tomcat và luồng Socket cùng ghi nhận lần sai | Mất lần đếm, kẻ dò mật khẩu thử được nhiều hơn 5 lần | `ConcurrentHashMap.compute` - đọc, tính, ghi là **nguyên tử** (`BoDemDangNhapSai`) |
@@ -118,9 +119,10 @@ thứ tự thì vòng chờ này không thể xảy ra. Bài kiểm thử `xuatN
 
 **Chốt chặn cuối:** cột `SoLuong` có ràng buộc `CK_XEMAY_SOLUONG CHECK(SoLuong >= 0)` trong script của nhóm.
 
-**Procedure của nhóm cũng an toàn khi chạy song song:** `sp_XacNhanDonHang` đọc các dòng `XE_MAY` của đơn bằng
-`WITH(UPDLOCK,HOLDLOCK)`, cùng loại khóa mà Hibernate dùng ở trên, nên một lần trừ kho từ Java và một lần xác nhận đơn
-bằng procedure trên cùng một xe sẽ chờ nhau chứ không chạy xen kẽ.
+**Procedure xác nhận đơn không trừ kho nữa:** kho đã bị trừ ngay lúc khách đặt hàng (mục 3.5). Bản gốc của
+`sp_XacNhanDonHang` trừ kho khi xác nhận, nếu giữ nguyên thì đơn đặt trên web bị trừ kho hai lần; phần trừ kho trong
+procedure đã được đặt trong chú thích (đánh dấu `[Tich hop]`). Procedure vẫn khóa dòng đơn hàng bằng `WITH(UPDLOCK,HOLDLOCK)`:
+hai nhân viên cùng xác nhận một đơn thì người sau nhận lỗi "Đơn hàng không ở trạng thái chờ xác nhận.", không có hai hóa đơn.
 
 ### 3.4 Sửa thông tin xe trong lúc có người mua (lỗi phát hiện khi tích hợp)
 
@@ -143,7 +145,58 @@ nhân viên đổi giá xe là `update XE_MAY set GiaBan=? where MaXe=?`, không
 `suaXeTrongLucCoNguoiMua` tái hiện đúng trình tự trên: có `@DynamicUpdate` thì còn 49 (đúng), bỏ đi thì còn 50 (sai).
 Muốn tăng tồn kho thì dùng nút **Nhập kho** trên trang sửa xe, đi qua `TonKhoService` như mọi thao tác kho khác.
 
-### 3.5 Tác vụ nền và tác vụ định kỳ
+### 3.5 Đặt hàng: khóa giỏ trước, khóa xe sau
+
+`DatHangService.datHang` làm mọi bước trong **một** giao dịch: khóa dòng giỏ của khách, khóa và trừ kho từng xe
+(`TonKhoService.xuatKhoNhieuXe`, mã xe tăng dần), tạo `DON_HANG` và `CHI_TIET_DON_HANG` theo giá bán hiện tại, làm trống giỏ.
+Thiếu hàng ở bất kỳ xe nào thì cả giao dịch bị hủy: không tạo đơn, không trừ xe nào, giỏ của khách còn nguyên.
+Đơn mới ở trạng thái `CHO_XAC_NHAN` và đã giữ xe cho khách (kho đã trừ); hủy đơn thì trả lại bằng `TonKhoService.nhapKho`.
+
+Hai khách cùng đặt chiếc xe cuối cùng (kiểm thử `haiKhachCungDatChiecXeCuoi`, và chạy thật trên giao diện, ảnh `28-hai-khach-cung-dat.jpg`):
+
+```mermaid
+sequenceDiagram
+    participant A as Khách A bấm "Đặt hàng"
+    participant G as Dòng giỏ của A, của B
+    participant X as Dòng xe Monster (còn 2)
+    participant B as Khách B bấm "Đặt hàng"
+    A->>G: khóa giỏ của A
+    B->>G: khóa giỏ của B (giỏ khác nhau, không phải chờ)
+    A->>X: khóa dòng xe, đọc 2 >= 2
+    B->>X: khóa dòng xe
+    Note over B: phải CHỜ vì A đang giữ khóa
+    A->>A: trừ kho còn 0, tạo đơn, làm trống giỏ, COMMIT
+    X-->>B: được khóa, đọc số MỚI: 0
+    B->>B: 0 < 2, HetHangException, ROLLBACK: không có đơn, giỏ của B còn nguyên
+```
+
+Một khách bấm "Đặt hàng" hai lần liên tiếp (hoặc đặt ở hai tab): lần sau chờ khóa dòng giỏ, đến lượt thì giỏ đã trống, nhận
+"Giỏ hàng đang trống." (kiểm thử `motKhachDatHaiLanCungLuc`: một đơn, kho chỉ trừ một lần).
+
+**Thứ tự khóa chung để không deadlock:** giao dịch nào cần cả giỏ và kho thì khóa giỏ trước, các xe sau (theo mã tăng dần).
+Thêm, sửa, xóa trong giỏ chỉ khóa giỏ; nhập/xuất kho từ client và trang quản trị chỉ khóa xe. Không giao dịch nào giữ khóa xe
+rồi mới xin khóa giỏ, nên không thể có vòng chờ.
+
+**Lỗi treo phát hiện khi chạy trên SQL Server:** khách mới (chưa có dòng `GIO_HANG`) bấm "Thêm vào giỏ" lần đầu thì trang
+quay mãi không xong. Bản đầu tiên khóa giỏ trước (`SELECT ... WITH (UPDLOCK, HOLDLOCK, ROWLOCK) WHERE MaKhachHang = ?`), không
+thấy dòng nào thì tạo giỏ trong một giao dịch riêng (`REQUIRES_NEW`). Với `HOLDLOCK`, khi dòng chưa tồn tại SQL Server khóa cả
+**khoảng** chỉ mục nơi dòng đó sẽ nằm, nên lệnh INSERT của giao dịch riêng phải chờ giao dịch ngoài, trong khi giao dịch ngoài
+lại đang chờ giao dịch riêng chạy xong. SQL Server không nhận ra đây là deadlock vì một đầu của vòng chờ nằm trong Java.
+Lúc treo, `sys.dm_tran_locks` cho thấy đúng như vậy:
+
+```
+request_session_id resource_type request_mode request_status
+60                 KEY           RangeS-U     GRANT     -- giao dịch ngoài: khóa khoảng chỉ mục
+59                 KEY           RangeI-N     WAIT      -- giao dịch riêng: INSERT GIO_HANG đang chờ
+```
+
+Kiểm thử trên H2 không bắt được lỗi này vì H2 không khóa khoảng chỉ mục. Cách sửa (`GioHangService.khoaGio`): kiểm tra giỏ
+bằng câu đọc thường (không khóa), chưa có thì tạo giỏ trong giao dịch riêng **trước**, sau đó mới khóa dòng giỏ đã tồn tại.
+Hai yêu cầu cùng tạo giỏ cho một khách thì ràng buộc `UNIQUE` của `GIO_HANG.MaKhachHang` chặn lần chèn thứ hai
+(log có dòng `Violation of UNIQUE KEY constraint` của Hibernate), yêu cầu đó dùng luôn giỏ vừa tạo. Sau khi sửa: khách mới thêm
+xe lần đầu mất khoảng 0,3 giây; ba tab cùng thêm xe lần đầu tạo đúng một giỏ có ba dòng; 73/73 bài kiểm thử đạt trên SQL Server 2025.
+
+### 3.6 Tác vụ nền và tác vụ định kỳ
 
 | Tác vụ | Cơ chế | Lịch chạy | Lớp |
 |---|---|---|---|

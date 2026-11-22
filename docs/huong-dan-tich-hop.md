@@ -1,8 +1,8 @@
 # Hướng dẫn tích hợp cho các thành viên
 
-Phần của các thành viên 1, 3, 4 đã được ghép vào dự án này (xem [bao-cao-tich-hop.md](bao-cao-tich-hop.md)).
-Tài liệu này dành cho người làm **phần còn lại** (giao diện cho khách, giỏ hàng - đặt hàng - hóa đơn) và cho ai sửa tiếp
-phần đã ghép. Mọi người làm trên **cùng một dự án** này (không tạo dự án riêng), theo các quy ước dưới đây.
+Phần của các thành viên 1, 2, 3, 4 và phần giỏ hàng của thành viên 5 đã được ghép vào dự án này
+(xem [bao-cao-tich-hop.md](bao-cao-tich-hop.md)). Tài liệu này dành cho người làm **phần còn lại** (hóa đơn, quản lý đơn hàng)
+và cho ai sửa tiếp phần đã ghép. Mọi người làm trên **cùng một dự án** này (không tạo dự án riêng), theo các quy ước dưới đây.
 
 ## 1. Quy ước chung
 
@@ -13,7 +13,7 @@ phần đã ghép. Mọi người làm trên **cùng một dự án** này (khô
 | Bảng, cột | **Theo script chung** `database/QL_CUAHANG_XEMAY.sql`: bảng `CHU_HOA_GACH_DUOI` (`DON_HANG`), cột `PascalCase` (`MaDonHang`, `NgayDat`) |
 | Entity | **Mọi** thuộc tính ghi rõ `@Column(name = "...")`, khóa ngoại ghi `@JoinColumn(name = "...")` (xem lý do ở mục 7). Cột `NVARCHAR` thêm `@Nationalized`. Khóa chính `INT IDENTITY` dùng kiểu `Integer` |
 | Nghiệp vụ | Viết trong **Service**, không viết trong Controller. Thao tác nhiều bước có `@Transactional` |
-| URL người dùng | `/xe-may`, `/xe-may/{id}`, `/hang-xe`, `/gio-hang`, `/dat-hang`, `/don-hang` |
+| URL người dùng | `/xe-may`, `/xe-may/{id}`, `/gio-hang` (đặt hàng: `POST /gio-hang/dat-hang`) đã có; `/don-hang` (đơn hàng của tôi) chưa có |
 | URL quản trị | `/quan-tri/xe-may`, `/quan-tri/hang-xe`, `/quan-tri/khach-hang` (đã có), `/quan-tri/don-hang`, `/quan-tri/hoa-don` |
 | Thêm / sửa / xóa | `GET .../them`, `POST .../them`, `GET .../{id}/sua`, `POST .../{id}/sua`, `POST .../{id}/xoa` (xóa luôn dùng POST) |
 
@@ -24,10 +24,11 @@ Quy tắc theo URL nằm trong `config/SecurityConfig.java`:
 | URL | Ai được vào |
 |---|---|
 | `/`, `/dang-nhap`, `/dang-ky`, tài nguyên tĩnh | Tất cả |
-| `GET /xe-may/**`, `GET /hang-xe/**` | Tất cả (khách chưa đăng nhập vẫn xem được xe) |
+| `GET /xe-may`, `GET /xe-may/**`, `GET /hang-xe/**` | Tất cả (khách chưa đăng nhập vẫn xem được xe) |
+| `/gio-hang`, `/gio-hang/**` | Chỉ khách hàng (nhân viên vào bị 403) |
 | `/quan-tri/tai-khoan/**`, `/quan-tri/lich-su-dang-nhap/**` | Chỉ quản trị viên |
 | `/quan-tri/**` | Quản trị viên và nhân viên |
-| **Mọi URL khác** (`/gio-hang`, `/dat-hang`, `/don-hang`, `/tai-khoan`...) | Phải đăng nhập |
+| **Mọi URL khác** (`/don-hang`, `/tai-khoan`...) | Phải đăng nhập |
 
 Đặt trang quản trị dưới `/quan-tri/...`, trang của khách dưới các URL còn lại, thì **không cần sửa gì** trong `SecurityConfig`.
 
@@ -54,15 +55,18 @@ public void xoa(Integer maDonHang) { ... }
 ## 3. Lấy người dùng đang đăng nhập và hồ sơ khách hàng
 
 ```java
-@GetMapping("/gio-hang")
-public String gioHang(@AuthenticationPrincipal TaiKhoanDetails nguoiDung, Model model) {
+@GetMapping("/don-hang")
+public String donHangCuaToi(@AuthenticationPrincipal TaiKhoanDetails nguoiDung, Model model) {
     Integer maTaiKhoan = nguoiDung.getId();          // cột MaTaiKhoan
     KhachHang khach = khachHangService.timTheoTaiKhoan(maTaiKhoan)
             .orElseThrow(() -> new NghiepVuException("Tài khoản chưa có hồ sơ khách hàng."));
     Integer maKhachHang = khach.getMaKhachHang();     // dùng cho GIO_HANG, DON_HANG
+    model.addAttribute("dsDon", donHangRepository.findByKhachHang_MaKhachHangOrderByMaDonHangDesc(maKhachHang));
     ...
 }
 ```
+
+`GioHangController` là mẫu đầy đủ: lấy khách đang đăng nhập, gọi Service, báo kết quả bằng thông báo flash.
 
 Mỗi tài khoản khách hàng **luôn có** một hồ sơ `KHACH_HANG` (tạo cùng lúc khi đăng ký hoặc khi quản trị viên tạo tài khoản).
 Khách mua tại cửa hàng thì có hồ sơ nhưng không có tài khoản (`MaTaiKhoan = NULL`).
@@ -140,55 +144,60 @@ Hãy tính trước bằng `th:with` rồi dùng biến, hoặc chuẩn bị s�
 
 ## 5. Phần việc còn lại
 
-### Thành viên làm giao diện trang chủ, danh sách xe, chi tiết xe, giỏ hàng
+### Thành viên làm giao diện cho khách (đã ghép ở lần 2)
 
-- **Danh sách xe** `/xe-may`: dùng lại hàm tìm kiếm, lọc của phần xe máy, truyền `true` để chỉ lấy xe đang bán:
+Trang chủ, danh sách xe, chi tiết xe, giỏ hàng đã chạy với dữ liệu thật (`GiaoDienXeService`, `GiaoDienXeController`,
+`templates/index.html`, `templates/xe-may/`, `templates/gio-hang/`). Những chỗ đã sửa khi ghép: báo cáo tích hợp mục 6.3. Còn lại:
 
-```java
-Page<XeMay> trang = xeMayService.timKiemVaLoc(tenXe, maHang, loaiXe, giaMin, giaMax, true, pageable);
-List<HangXe> dsHang = hangXeService.getHangXeDangHoatDong();   // cho ô lọc hãng
-```
+- **Ảnh xe**: cột `XE_MAY.HinhAnh` trong dữ liệu mẫu đang để trống nên mọi xe hiện "Chưa có ảnh thực tế". Theo quy ước của bạn,
+  đặt ảnh tên `xe-<mã xe>.jpg` vào `static/images/xe/` (ví dụ `xe-2.jpg` cho Vision) là hiện ngay; hoặc điền cột `HinhAnh`
+  (ví dụ `/images/xe/vision.jpg`; nhân viên sửa được ở trang sửa xe). Ảnh không phải của nhóm thì ghi nguồn trong `docs/nguon-anh-va-font.md`.
+- **Chân trang**: cột "Sản phẩm" trong `fragments/footer.html` (đang để trong chú thích), ví dụ liên kết tới `/xe-may` và `/xe-may?conHang=true`.
+- Giữ các thuộc tính `sec:authorize` trong header, footer.
 
-  Mỗi xe là một thẻ `.the-xe` (lưới 3 cột trên máy tính, 2 cột máy tính bảng, 1 cột điện thoại).
-- **Chi tiết xe** `/xe-may/{id}`: `xeMayService.getXeMayById(id)` (ném `KhongTimThayException` -> trang 404 nếu không có);
-  xe có `trangThai == false` thì không cho đặt mua. Bố cục theo mục Quy trình làm trang mới của quy chuẩn giao diện.
-- **Trang chủ**: thay nội dung `templates/index.html`, giữ dòng `th:replace` bố cục chung. Không cần sửa `TrangChuController`
-  nếu chỉ hiển thị nội dung tĩnh; muốn hiện xe mới về thì thêm vào Controller.
-- **Ảnh xe**: cột `XE_MAY.HinhAnh` trong dữ liệu mẫu đang để trống. Thêm ảnh vào `static/images/xe/`, cập nhật giá trị
-  `HinhAnh` trong script (ví dụ `/images/xe/vision.jpg`) và ghi nguồn ảnh. Nhân viên cũng sửa được đường dẫn ảnh ở trang sửa xe.
-- `GET /xe-may/**` đã cho khách chưa đăng nhập xem. **Giữ các thuộc tính `sec:authorize`** trong header, footer.
+### Thành viên làm đặt hàng, hóa đơn
 
-### Thành viên làm giỏ hàng, đặt hàng, hóa đơn
+Đã có sau lần 2:
 
-Bảng đã có trong script: `GIO_HANG` (mỗi khách một giỏ), `CHI_TIET_GIO_HANG`, `DON_HANG` (trạng thái `CHO_XAC_NHAN`,
-`DA_XAC_NHAN`, `DANG_GIAO`, `HOAN_TAT`, `DA_HUY`), `CHI_TIET_DON_HANG`, `HOA_DON`, `CHI_TIET_HOA_DON`, và procedure
-`sp_XacNhanDonHang`. Việc cần làm: Entity, Repository, Service, Controller, giao diện cho các bảng này.
+| Thành phần | Lớp | Ghi chú |
+|---|---|---|
+| Entity | `GioHang`, `ChiTietGioHang`, `DonHang`, `ChiTietDonHang` | Theo bảng của script; `ThanhTien` là cột tính toán nên ánh xạ chỉ đọc (`insertable = false, updatable = false`) |
+| Repository | `GioHangRepository`, `DonHangRepository` | `findByKhachHang_MaKhachHangOrderByMaDonHangDesc`, `countByTrangThai` |
+| Giỏ hàng | `GioHangService`, `GioHangController` (`/gio-hang`) | Lưu trong CSDL, mỗi khách một giỏ |
+| Đặt hàng | `DatHangService.datHang`, `POST /gio-hang/dat-hang` | Khóa giỏ, **trừ kho ngay**, tạo đơn `CHO_XAC_NHAN`, làm trống giỏ, trong cùng một giao dịch |
 
-- Cột `ThanhTien` là cột tính toán của SQL Server: ánh xạ chỉ đọc
-  `@Column(name = "ThanhTien", insertable = false, updatable = false) private BigDecimal thanhTien;`
-- Theo thiết kế của script, **trừ kho khi nhân viên xác nhận đơn** (khách đặt thì đơn ở trạng thái chờ xác nhận).
-  Trong Java, trừ kho bằng `TonKhoService` **trong cùng giao dịch** với việc đổi trạng thái đơn và tạo hóa đơn:
+Việc còn lại: Entity `HoaDon`, `ChiTietHoaDon` (bảng `HOA_DON`, `CHI_TIET_HOA_DON`); trang quản lý đơn hàng cho nhân viên
+(`/quan-tri/don-hang`: xem, xác nhận, hủy); trang hóa đơn (`/quan-tri/hoa-don`); trang "Đơn hàng của tôi" cho khách (`/don-hang`).
+
+- **Kho đã bị trừ lúc khách đặt.** Xác nhận đơn chỉ đổi trạng thái và tạo hóa đơn, **không** gọi `xuatKho` nữa (gọi là trừ kho
+  hai lần). Procedure `sp_XacNhanDonHang` đã được sửa đúng như vậy (khóa đơn, đổi trạng thái, tạo hóa đơn) nên gọi từ Java cũng được.
+- Hủy đơn đang chờ xác nhận thì trả lại xe cho kho bằng `TonKhoService.nhapKho`, khóa các xe theo mã tăng dần như lúc đặt hàng:
 
 ```java
 @Transactional
 public HoaDon xacNhanDon(Integer maDonHang) {
     DonHang don = entityManager.find(DonHang.class, maDonHang, LockModeType.PESSIMISTIC_WRITE); // khóa đơn: 2 người không cùng xác nhận 1 đơn
-    if (!"CHO_XAC_NHAN".equals(don.getTrangThai())) throw new NghiepVuException("Đơn không ở trạng thái chờ xác nhận.");
-    Map<Integer, Integer> soLuongTheoXe = ...;          // mã xe -> số lượng, lấy từ chi tiết đơn
-    tonKhoService.xuatKhoNhieuXe(soLuongTheoXe);         // khóa từng xe theo mã tăng dần; thiếu hàng -> HetHangException, hủy cả giao dịch
+    if (!DonHang.CHO_XAC_NHAN.equals(don.getTrangThai())) throw new NghiepVuException("Đơn không ở trạng thái chờ xác nhận.");
     don.setTrangThai("DA_XAC_NHAN");
-    return taoHoaDon(don);                               // HOA_DON + CHI_TIET_HOA_DON
+    return taoHoaDon(don);                               // HOA_DON + CHI_TIET_HOA_DON, chép từ các dòng của đơn
+}
+
+@Transactional
+public void huyDon(Integer maDonHang) {
+    DonHang don = entityManager.find(DonHang.class, maDonHang, LockModeType.PESSIMISTIC_WRITE);
+    if (!DonHang.CHO_XAC_NHAN.equals(don.getTrangThai())) throw new NghiepVuException("Chỉ hủy được đơn đang chờ xác nhận.");
+    Map<Integer, Integer> traLai = new TreeMap<>();      // mã xe tăng dần: cùng thứ tự khóa với đặt hàng, không deadlock
+    for (ChiTietDonHang dong : don.getDsChiTiet()) traLai.merge(dong.getXeMay().getMaXe(), dong.getSoLuong(), Integer::sum);
+    traLai.forEach(tonKhoService::nhapKho);
+    don.setTrangThai("DA_HUY");
 }
 ```
 
-  Cách này dùng chung cơ chế khóa với client quản lý kho và có sẵn kiểm thử đồng thời. Gọi `sp_XacNhanDonHang` từ Java
-  cũng đúng (procedure khóa cùng các dòng bằng `UPDLOCK`), nhưng khi đó phần xử lý đồng thời nằm trong SQL thay vì Java.
-- Nhóm muốn trừ kho ngay lúc khách đặt thì gọi `xuatKhoNhieuXe` trong hàm đặt hàng thay cho hàm xác nhận.
-- Hủy đơn đã trừ kho: trả hàng bằng `tonKhoService.nhapKho(maXe, soLuong)`, cũng trong `@Transactional`.
-- Trong Controller, bắt `HetHangException` để báo lại: `e.getMessage()` đã là câu tiếng Việt
-  ("Xe "Ducati Monster" chỉ còn 2 chiếc, không đủ số lượng yêu cầu (3).").
-- Demo đồng thời cho buổi chấm: hai nhân viên cùng xác nhận hai đơn mua chiếc xe cuối cùng -> một đơn thành công, đơn còn lại
-  báo hết hàng; tồn kho không âm.
+- Trong Controller, bắt `NghiepVuException` (gồm cả `HetHangException`) để báo lại: `e.getMessage()` đã là câu tiếng Việt.
+- Menu: thêm mục "Đơn hàng" vào `fragments/quan-tri.html`; bỏ chú thích mục "Hóa đơn" ở đó và mục "Đơn hàng của tôi"
+  trong `fragments/tai-khoan.html` khi trang tương ứng đã chạy.
+- Demo đồng thời đã có: hai khách cùng đặt chiếc xe cuối cùng (`kiem-thu.md` mục 6.1, DH-03). Khi có trang quản lý đơn,
+  thêm demo hai nhân viên cùng xác nhận một đơn: một người được, người kia báo đơn không còn chờ xác nhận, chỉ có một hóa đơn.
 
 ### Thành viên làm phân tích, khách hàng
 

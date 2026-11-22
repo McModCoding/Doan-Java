@@ -1,15 +1,19 @@
-# Quy chuẩn giao diện - Web Xe Máy
+# Quy chuẩn giao diện - MotoStore
 
 Tài liệu này là **quy chuẩn giao diện duy nhất** của cả nhóm. Thành viên nào làm trang mới cũng đọc tài liệu này trước.
 Các giá trị gốc bên dưới (màu, chữ, bo góc, khoảng cách) đã được cài sẵn trong
 `web/src/main/resources/static/css/theme.css` dưới dạng biến CSS và lớp Bootstrap, nên khi làm trang chỉ cần
 **dùng lớp có sẵn, không tự đặt màu hay font mới**.
 
-> Tên cửa hàng ("Web Xe Máy"), hotline, địa chỉ đổi ở một chỗ duy nhất (hotline, địa chỉ hiện là dữ liệu tạm): `web/src/main/resources/messages.properties`.
+> Tên cửa hàng ("MotoStore"), hotline, địa chỉ đổi ở một chỗ duy nhất (hotline, địa chỉ hiện là dữ liệu tạm): `web/src/main/resources/messages.properties`.
+>
+> Các trang của khách (trang chủ, danh sách xe, chi tiết xe, giỏ hàng) do thành viên 2 làm trên cùng nền này, thêm các lớp riêng
+> trong `static/css/motostore-frontend.css` (thẻ xe `.the-xe-khach`, khung ảnh `.anh-xe-khach`, khung chưa có ảnh `.anh-trong`,
+> các lớp `moto-*`). File này nạp sau `theme.css` trong bố cục chung; trang mới cho khách dùng lại các lớp đó.
 
 ## Tổng quan
 
-Web Xe Máy là website của một đại lý xe máy chính hãng: khách vào web để **xem xe, so giá, đặt mua**, nhân viên vào để quản lý.
+MotoStore là website của một đại lý xe máy chính hãng: khách vào web để **xem xe, so giá, đặt mua**, nhân viên vào để quản lý.
 Giao diện phải gợi cảm giác của một showroom sáng sủa, ngăn nắp và nói thật:
 
 - **Sáng và sạch.** Nền trắng, vùng phụ màu xám đá rất nhạt; không nền kem, không nền tối toàn trang.
@@ -179,7 +183,8 @@ Khi làm một trang mới:
 
 1. Dùng bố cục chung: `th:replace="~{fragments/layout :: trang(~{::title}, ~{::section})}"` (xem `docs/huong-dan-tich-hop.md`).
 2. Dùng lớp Bootstrap và lớp trong `theme.css`; không viết `style=""` với màu hay font.
-3. Trang danh sách xe: lưới `row g-4` 3 cột trên máy tính, 2 cột trên máy tính bảng, 1 cột trên điện thoại, mỗi ô là `.the-xe`.
+3. Trang danh sách xe: lưới `row g-4` 3 cột trên máy tính, 2 cột trên máy tính bảng, 1 cột trên điện thoại, mỗi ô là một thẻ xe
+   (trang của khách dùng mảnh `fragments/the-xe :: theXe(xe)` của thành viên 2).
 4. Trang chi tiết xe: ảnh lớn bên trái (`col-lg-7`), bên phải tên xe (h1), giá (`.gia`), lựa chọn màu, nút Đặt mua.
 5. Xong thì chụp màn hình rộng 1280 px và 390 px, đối chiếu mục "Không" ở trên.
 

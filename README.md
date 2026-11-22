@@ -4,8 +4,9 @@
 Kèm theo là một **chương trình client quản lý kho** chạy tách biệt, trao đổi dữ liệu với ứng dụng web qua **Socket**.
 
 > Bản hiện tại đã **ghép phần của các thành viên** vào một dự án và một CSDL chung: đăng nhập, phân quyền, xử lý đồng thời,
-> lập trình mạng; quản lý xe máy, hãng xe, tìm kiếm và lọc; quản lý khách hàng; script CSDL của nhóm.
-> Còn thiếu: giỏ hàng, đặt hàng, hóa đơn và các trang cho khách (trang chủ, danh sách xe, chi tiết xe).
+> lập trình mạng; quản lý xe máy, hãng xe, tìm kiếm và lọc; quản lý khách hàng; script CSDL của nhóm (lần 1);
+> trang chủ, danh sách xe, chi tiết xe, giỏ hàng, đặt hàng (lần 2).
+> Còn thiếu: hóa đơn, trang quản lý đơn hàng cho nhân viên, trang "Đơn hàng của tôi", tài liệu phân tích / use case.
 > Chi tiết từng phần, lỗi đã sửa khi ghép: [docs/bao-cao-tich-hop.md](docs/bao-cao-tich-hop.md).
 > Cách làm tiếp phần còn thiếu: [docs/huong-dan-tich-hop.md](docs/huong-dan-tich-hop.md).
 
@@ -22,23 +23,25 @@ Kèm theo là một **chương trình client quản lý kho** chạy tách biệ
 ## Cấu trúc thư mục
 
 ```
-web-xe-may/
+Doan-Java/
 ├── web/                         Ứng dụng web Spring Boot (cổng 8080) + Socket server (cổng 9090)
 │   └── src/main/java/com/xemay/
 │       ├── config/              Cấu hình bảo mật (SecurityConfig), đa luồng, dữ liệu khởi tạo
 │       ├── controller/          Controller cho người dùng; controller/quantri/ cho khu vực quản trị
-│       ├── dto/                 Dữ liệu của các form (có @Valid)
-│       ├── entity/              Ánh xạ bảng: VaiTro, TaiKhoan, LichSuDangNhap, HangXe, XeMay, KhachHang
+│       ├── dto/                 Dữ liệu của các form (có @Valid), dữ liệu hiển thị xe và giỏ hàng
+│       ├── entity/              Ánh xạ bảng: VaiTro, TaiKhoan, LichSuDangNhap, HangXe, XeMay, KhachHang,
+│       │                        GioHang, ChiTietGioHang, DonHang, ChiTietDonHang
 │       ├── exception/           Ngoại lệ nghiệp vụ + GlobalExceptionHandler (trang lỗi thân thiện)
 │       ├── network/             Socket server, giao thức, bộ xử lý lệnh
 │       ├── repository/          Spring Data JPA
 │       ├── scheduler/           Tác vụ định kỳ (@Scheduled)
 │       ├── security/            Đăng nhập, chống dò mật khẩu, xử lý từ chối truy cập
-│       ├── service/             Nghiệp vụ: tài khoản, xe máy, hãng xe, khách hàng, tồn kho, email nền
+│       ├── service/             Nghiệp vụ: tài khoản, xe máy, hãng xe, khách hàng, tồn kho, giỏ hàng, đặt hàng, email nền
 │       └── util/                Hàm tiện ích cho phân trang, sắp xếp
 │   └── src/main/resources/
 │       ├── templates/           Giao diện Thymeleaf; fragments/ là bố cục, menu, footer dùng chung
 │       ├── static/css/theme.css Cài đặt quy chuẩn giao diện trên nền Bootstrap
+│       ├── static/css/motostore-frontend.css  Bổ sung cho trang của khách (trang chủ, xe, giỏ hàng)
 │       ├── static/fonts/        Font Be Vietnam Pro (lưu sẵn, chạy không cần Internet)
 │       ├── static/images/       Ảnh (nguồn, giấy phép: docs/nguon-anh-va-font.md)
 │       └── messages.properties  Tên cửa hàng, hotline, địa chỉ (dữ liệu tạm, sửa tại đây)
@@ -99,7 +102,7 @@ Chạy thử nhanh **không cần SQL Server** (dữ liệu nằm trong bộ nh�
 |---|---|---|
 | `admin` | Quản trị viên | Mọi chức năng: xe máy, hãng xe, khách hàng, tài khoản, lịch sử đăng nhập |
 | `nhanvien1` ... `nhanvien4` | Nhân viên | Quản lý xe máy, hãng xe, khách hàng, nhập kho; không ngừng bán xe, không xóa khách, không quản lý tài khoản |
-| `khach1` ... `khach20` | Khách hàng | Trang của khách hàng, không vào được khu vực quản trị |
+| `khach1` ... `khach20` | Khách hàng | Xem xe, giỏ hàng (mỗi khách có sẵn 1 xe trong giỏ), đặt hàng; không vào được khu vực quản trị |
 | `khach16` | Khách hàng | Tài khoản **đang bị khóa** - dùng để demo trường hợp bị chặn đăng nhập |
 
 ### Bước 4 - Chạy chương trình client quản lý kho
@@ -132,7 +135,8 @@ java -cp client/target/xemay-client.jar com.xemay.client.KiemThuNhieuClient loca
 ./mvnw -pl web test
 ```
 
-65 bài kiểm thử chạy trên H2 trong bộ nhớ, khoảng 30 giây, không cần SQL Server. Muốn chạy trên SQL Server thật,
+73 bài kiểm thử chạy trên H2 trong bộ nhớ, khoảng 30 giây, không cần SQL Server. Phần giỏ hàng, đặt hàng có khóa dòng
+nên **nhớ chạy cả trên SQL Server** trước khi nộp (có lỗi chỉ xuất hiện trên SQL Server, xem `docs/kiem-thu.md` mục 2). Muốn chạy trên SQL Server thật,
 tạo một CSDL **riêng** cho kiểm thử (các bảng trong đó sẽ bị xóa và tạo lại) rồi đặt biến môi trường. Ví dụ trên PowerShell:
 
 ```powershell
@@ -149,8 +153,10 @@ Kết quả kiểm thử và kịch bản kiểm thử: [docs/kiem-thu.md](docs/
 - Phong cách **đại lý xe máy chính hãng**: nền trắng, một màu đỏ đậm làm điểm nhấn, font **Be Vietnam Pro** (font do người Việt
   thiết kế, dấu tiếng Việt chuẩn). Toàn bộ quy chuẩn nằm trong [docs/quy-chuan-giao-dien.md](docs/quy-chuan-giao-dien.md).
 - Vẫn là **Thymeleaf + Bootstrap** đúng yêu cầu đề bài; giao diện chỉ ghi đè biến CSS của Bootstrap trong `static/css/theme.css`.
+  Các trang của khách (trang chủ, danh sách xe, chi tiết xe, giỏ hàng) do thành viên 2 làm, thêm `static/css/motostore-frontend.css`.
 - Font, Bootstrap, biểu tượng đều lưu trong dự án: demo ở phòng lab **không cần Internet**.
-- Tên "Web Xe Máy", hotline, địa chỉ là **dữ liệu tạm**, đổi trong `messages.properties`.
+- Tên cửa hàng "MotoStore", hotline, địa chỉ là **dữ liệu tạm**, đổi trong `messages.properties`.
+- Ảnh xe: đặt file `static/images/xe/xe-<mã xe>.jpg` hoặc điền cột `XE_MAY.HinhAnh`; xe chưa có ảnh hiện khung "Chưa có ảnh thực tế".
 - Ảnh trang đăng nhập, đăng ký là ảnh tạm có giấy phép tự do từ Wikimedia Commons, đã ghi nguồn ngay trên ảnh và trong
   [docs/nguon-anh-va-font.md](docs/nguon-anh-va-font.md).
 
@@ -158,11 +164,11 @@ Kết quả kiểm thử và kịch bản kiểm thử: [docs/kiem-thu.md](docs/
 
 | Thành viên | Phân công | Trạng thái trong bản này |
 |---|---|---|
-| 1 | Đăng nhập, phân quyền, xử lý đồng thời, tích hợp hệ thống, kiểm thử (+ lập trình mạng) | Xong, đã ghép phần của các bạn 3, 4 |
-| 2 | Giao diện trang chủ, danh sách xe, chi tiết xe, giỏ hàng | **Chưa nhận được** |
+| 1 | Đăng nhập, phân quyền, xử lý đồng thời, tích hợp hệ thống, kiểm thử (+ lập trình mạng) | Xong, đã ghép phần của các bạn 2, 3, 4, 5 |
+| 2 | Giao diện trang chủ, danh sách xe, chi tiết xe, giỏ hàng | Đã ghép (lần 2) |
 | 3 | Phân tích, use case, thiết kế CSDL, quản lý khách hàng | Đã ghép quản lý khách hàng; chưa có tài liệu use case |
 | 4 | CSDL SQL Server, quản lý xe máy, hãng xe, tìm kiếm/lọc | Đã ghép (giao diện quản trị do người tích hợp làm vì file nộp rỗng) |
-| 5 | Giỏ hàng, đặt hàng, hóa đơn, chi tiết hóa đơn | Mới có bảng và procedure trong script, **chưa có code Java** |
+| 5 | Giỏ hàng, đặt hàng, hóa đơn, chi tiết hóa đơn | Đã ghép giỏ hàng (viết lại theo bảng của script); đặt hàng do người tích hợp làm; **chưa có hóa đơn, quản lý đơn hàng** |
 
 ## Chức năng đã làm
 
@@ -176,13 +182,16 @@ Kết quả kiểm thử và kịch bản kiểm thử: [docs/kiem-thu.md](docs/
 | Quản lý xe máy: tìm theo tên, lọc theo hãng, loại, giá, trạng thái; phân trang, sắp xếp; thêm, sửa, ngừng kinh doanh, nhập kho | `XeMayController`, `XeMayService` | 4 (+1 giao diện) | 2.4, 3.3, 4.4 |
 | Quản lý hãng xe: tìm, thêm, sửa, ngừng hoạt động, số mẫu xe mỗi hãng | `HangXeController`, `HangXeService` | 4 (+1 giao diện) | 2.4, 3.3 |
 | Quản lý khách hàng: tìm theo tên hoặc số điện thoại, thêm khách tại cửa hàng, sửa, xóa | `KhachHangController`, `KhachHangService` | 3 | 2.4, 3.3, 4.4 |
+| Trang chủ (xe mới về), danh sách xe: tìm theo tên hoặc hãng, lọc giá, còn hàng, sắp xếp, phân trang; chi tiết xe | `TrangChuController`, `GiaoDienXeController`, `GiaoDienXeService` | 2 | 2.4, 3.1, 3.3, 4.4 |
+| Giỏ hàng lưu trong CSDL: thêm, sửa số lượng, xóa; không vượt tồn kho, tối đa 20 xe mỗi mẫu | `GioHangController`, `GioHangService` | 2, 5 (+1 ghép vào CSDL) | 2.4, 4.4 |
+| Đặt hàng: khóa giỏ, khóa từng xe, trừ kho, tạo đơn trong một giao dịch; hai khách cùng đặt chiếc xe cuối thì chỉ một người được | `DatHangService` | 1 (phần của 5) | 5.2, 4.5 |
 | Email chào mừng khách mới gửi trên luồng nền, chỉ sau khi giao dịch đã lưu | `GuiEmailService` | 3 (+1 sửa) | 5.1 |
 | Nhật ký đăng nhập ghi bằng tác vụ nền `@Async` | `LichSuDangNhapService` | 1 | 5.1 |
 | Tác vụ định kỳ `@Scheduled`: quét xe sắp hết hàng, dọn dữ liệu cũ | `TacVuDinhKy` | 1 | 5.1 |
 | Tồn kho an toàn khi nhiều giao dịch cùng lúc (khóa dòng JPA, chống deadlock, sửa xe không ghi đè tồn kho) | `TonKhoService`, `XeMay` (`@DynamicUpdate`) | 1 | 5.2, 4.5 |
 | Socket server phục vụ nhiều client song song + client tách biệt | `network/`, `client/` | 1 | 5.3, 5.4 |
 | Trang lỗi thân thiện (403, 404, 500), xử lý ngoại lệ chung | `GlobalExceptionHandler`, `error.html` | 1 | 2.5 |
-| CSDL 12 bảng, quan hệ một-nhiều, dữ liệu mẫu, procedure xác nhận đơn | `database/QL_CUAHANG_XEMAY.sql` | 3, 4 (+1 bổ sung) | 4.1, 4.2, 4.3 |
+| CSDL 12 bảng, quan hệ một-nhiều, dữ liệu mẫu, procedure xác nhận đơn (tạo hóa đơn) | `database/QL_CUAHANG_XEMAY.sql` | 3, 4 (+1 bổ sung) | 4.1, 4.2, 4.3 |
 | Quy chuẩn giao diện chung, theme Bootstrap, font tiếng Việt nhúng sẵn | `docs/quy-chuan-giao-dien.md`, `static/css/theme.css` | 1 | 3.1, 3.2 |
 
 Thiết kế phần đồng thời và phần mạng (dùng cho mục 1.5 của báo cáo): [docs/thiet-ke-dong-thoi-va-mang.md](docs/thiet-ke-dong-thoi-va-mang.md).

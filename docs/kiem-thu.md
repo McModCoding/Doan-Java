@@ -1,18 +1,19 @@
 # Kiểm thử - bản đã tích hợp
 
 Tài liệu dùng cho **Chương 4** của báo cáo. Mọi kết quả bên dưới là kết quả chạy thật, không phải kết quả dự kiến.
-Bản này gồm phần đăng nhập, phân quyền, đồng thời, mạng và phần xe máy, hãng xe, khách hàng đã ghép (20-21/11/2026).
+Bản này gồm phần đăng nhập, phân quyền, đồng thời, mạng; phần xe máy, hãng xe, khách hàng (ghép lần 1, 20-21/11/2026);
+giao diện cho khách, giỏ hàng, đặt hàng (ghép lần 2, 22/11/2026).
 
 ## 1. Môi trường kiểm thử
 
 | Thành phần | Phiên bản |
 |---|---|
-| JDK | OpenJDK 25 (mã nguồn biên dịch ở mức Java 17); bản trước tích hợp đã chạy thêm trên OpenJDK 21 |
+| JDK | OpenJDK 21 (lần 2) và OpenJDK 25 (lần 1); mã nguồn biên dịch ở mức Java 17 |
 | Cơ sở dữ liệu | SQL Server 2025 (phiên bản 17.0) với script `QL_CUAHANG_XEMAY.sql`; H2 2.3 trong bộ nhớ cho kiểm thử nhanh |
 | Kiểm thử tự động | JUnit 5, Spring Boot Test, MockMvc, Spring Security Test |
 | Kiểm thử giao diện | Trình duyệt Chromium, khung hình máy tính 1440×900 và điện thoại iPhone 13 (390×844) |
 
-## 2. Kiểm thử tự động (65 bài)
+## 2. Kiểm thử tự động (73 bài)
 
 Chạy tại thư mục gốc: `./mvnw -pl web test`. Cách chạy trên SQL Server: xem README, bước 5.
 
@@ -26,18 +27,25 @@ Chạy tại thư mục gốc: `./mvnw -pl web test`. Cách chạy trên SQL Ser
 | `QuanLyXeMayTest` | 10 | Phân quyền trang xe máy; lọc sai kiểu dữ liệu; thêm xe, trùng tên; **sửa xe không ghi đè tồn kho** (tuần tự và đồng thời); ngừng kinh doanh chỉ quản trị viên; nhập kho trên trang; hiển thị trang, mã không tồn tại -> 404 |
 | `QuanLyHangXeKhachHangTest` > Hãng xe | 5 | Trùng tên hãng; không ghi đè hãng khác qua form; ngừng hoạt động (403 với nhân viên, chặn khi còn xe); nhân viên không đổi được trạng thái; số mẫu xe mỗi hãng |
 | `QuanLyHangXeKhachHangTest` > Khách hàng | 9 | Đăng ký tạo hồ sơ; trùng số điện thoại thì hủy cả tài khoản; email chào mừng chạy trên luồng nền; thêm, tìm khách tại cửa hàng; dữ liệu sai; đồng bộ họ tên, số điện thoại hai chiều; xóa khách; phân quyền |
+| `GioHangDatHangTest` | 8 | Trang chủ, danh sách xe (tìm theo "hãng + tên", khoảng giá sai), chi tiết xe, xe ngừng bán -> 404; giỏ hàng chỉ cho khách hàng; giỏ lưu trong CSDL, không vượt tồn kho; đặt hàng tạo đơn và trừ kho; thiếu hàng hoặc xe ngừng bán thì không tạo đơn; **hai khách cùng đặt chiếc xe cuối**; **một khách bấm đặt hai lần cùng lúc** |
 | `TonKhoDongThoiTest` | 7 | Đồng thời trên tồn kho (mục 4) |
 | `KhoSocketServerTest` | 7 | Socket server, giao thức, nhiều client (mục 5) |
 | `BoDemDangNhapSaiTest` | 5 | Bộ đếm đăng nhập sai, gồm 50 luồng ghi đồng thời |
 
 | Lần chạy | Kết quả | Thời gian |
 |---|---|---|
-| Trên H2 trong bộ nhớ (JDK 25) | **65/65 đạt** | 24 giây |
-| Trên SQL Server 2025 (JDK 25), CSDL kiểm thử riêng | **65/65 đạt** | 19 giây |
+| Lần 2 (73 bài) trên H2 trong bộ nhớ (JDK 21) | **73/73 đạt** | 18 giây |
+| Lần 2 (73 bài) trên SQL Server 2025 (JDK 21), CSDL kiểm thử riêng | **73/73 đạt** | 21 giây |
+| Lần 1 (65 bài) trên H2 và trên SQL Server 2025 (JDK 25) | 65/65 đạt ở cả 2 lần | 19-24 giây |
 | Bản trước tích hợp (41 bài) trên SQL Server 2022 và 2025, JDK 21 và 25 | 41/41 đạt ở cả 4 lần | 14-16 giây |
 
 **Bài kiểm thử có kiểm chứng ngược:** tạm bỏ `@DynamicUpdate` trên `XeMay` thì bài `suaXeTrongLucCoNguoiMua` báo sai
 (mong đợi tồn kho 49, thực tế 50); đặt lại thì đạt. Tức là bài kiểm thử thật sự bắt được lỗi mất cập nhật (mục 4).
+
+**Phải chạy cả trên SQL Server, không chỉ H2:** ở lần 2, bản đầu của giỏ hàng đạt hết trên H2 nhưng trên SQL Server thì
+khách mới thêm xe vào giỏ lần đầu bị treo (SQL Server khóa cả khoảng chỉ mục khi đọc có khóa một dòng chưa tồn tại, H2 thì không).
+Các bài trong `GioHangDatHangTest` đều dùng khách mới nên chạy trên SQL Server là gặp ngay. Nguyên nhân và cách sửa:
+`thiet-ke-dong-thoi-va-mang.md` mục 3.5.
 
 ## 3. Kịch bản kiểm thử chức năng (thực hiện trên giao diện)
 
@@ -68,7 +76,7 @@ Chạy với ứng dụng kết nối SQL Server 2025, dữ liệu từ script `
 | KH-01 | Xóa khách đã có giỏ hàng, đơn hàng | khách mã 2 | Báo "Không thể xóa khách hàng "Trần Thị Bích" vì đã có giỏ hàng hoặc đơn hàng." | Đạt |
 | KH-02 | Xóa khách mua tại cửa hàng chưa có đơn | khách mã 23 (`0913000003`) | Có hộp xác nhận; báo "Đã xóa khách hàng." | Đạt |
 | KH-03 | Tìm khách | từ khóa `0913` | Chỉ còn 3 khách mua tại cửa hàng | Đạt |
-| GD-01 | Hiển thị trên điện thoại | iPhone 13, trang xe máy | Bộ lọc 5 ô xếp dọc; bảng vừa màn hình, không cuộn ngang | Đạt |
+| GD-01 | Hiển thị trên điện thoại | iPhone 13, trang quản lý xe máy | Bộ lọc 5 ô xếp dọc; bảng vừa màn hình, không cuộn ngang | Đạt |
 | GD-02 | Kiểm tra độ tương phản màu chữ và bố cục | Quét tự động 9 trang quản trị (tổng quan, xe máy, hãng xe, khách hàng: danh sách, thêm, sửa) ở 1280 px và 390 px | Không có lỗi | Đạt (đã sửa 1 lỗi "thẻ lồng trong thẻ" ở lần quét đầu) |
 
 ## 4. Kiểm thử đồng thời
@@ -151,14 +159,60 @@ Log của server cùng lúc đó: mỗi client được một luồng riêng ph�
 5. Tắt ngang một cửa sổ client (Ctrl+C): log server ghi "Kết nối với client ... bị gián đoạn", hai client còn lại vẫn dùng bình thường.
 6. Nhập lại 3 xe để trả dữ liệu về như cũ (hoặc chạy lại script).
 
-## 6. Kịch bản chờ phần giỏ hàng, đặt hàng, hóa đơn
+## 6. Kịch bản cho phần giao diện khách, giỏ hàng, đặt hàng (lần 2)
 
-Các dòng dưới đây chưa chạy được vì chức năng chưa có; khi thành viên phụ trách làm xong, người kiểm thử chạy và điền kết quả.
+Chạy với ứng dụng kết nối SQL Server 2025, dữ liệu vừa tạo lại bằng script, thao tác trên trình duyệt Chromium
+(kịch bản DH-03 dùng script điều khiển hai cửa sổ trình duyệt để hai lần bấm đi cùng lúc). Ảnh chụp: `docs/hinh-anh/24` đến `30`.
+
+### 6.1 Kịch bản của người tích hợp
+
+| Mã | Kịch bản | Dữ liệu / thao tác | Kết quả mong đợi | Kết quả |
+|---|---|---|---|---|
+| KX-01 | Trang chủ khi chưa đăng nhập | mở `/` | Hiện 6 xe mới nhất đang bán, tên cửa hàng MotoStore | Đạt |
+| KX-02 | Danh sách xe: tìm, lọc, phân trang | từ khóa `honda`; giá từ 100.000.000 đ + còn hàng; trang 2 | 4 xe Honda; 7 xe; mỗi trang 9 xe | Đạt |
+| KX-03 | Chi tiết xe | `/xe-may/15`; `/xe-may/9999` | Tiêu đề "Monster \| MotoStore", khách chưa đăng nhập thấy lời mời đăng nhập; mã không có -> 404 | Đạt (trước khi sửa: luôn lỗi 500) |
+| GH-01 | Ai được vào giỏ hàng | chưa đăng nhập; `nhanvien1` | Chuyển tới trang đăng nhập; nhân viên bị 403 | Đạt |
+| GH-02 | Thêm, sửa số lượng trong giỏ | `khach1`: thêm 2 Vision, sửa thành 3, sửa thành 50 | "Đã thêm xe vào giỏ hàng"; "Đã cập nhật giỏ hàng"; "Mỗi mẫu xe được chọn tối đa 20 chiếc" | Đạt |
+| GH-03 | Khách mới đăng ký thêm xe vào giỏ lần đầu | tài khoản vừa đăng ký, chưa có `GIO_HANG`; thêm 1 lần, rồi 3 tab cùng lúc | Thêm được ngay; 3 tab tạo đúng 1 giỏ có 3 dòng | Đạt sau khi sửa (bản đầu bị treo, xem mục 2) |
+| DH-01 | Đặt hàng thiếu địa chỉ | xóa trống ô địa chỉ | "Vui lòng nhập địa chỉ giao xe.", không tạo đơn | Đạt |
+| DH-02 | Đặt hàng | `khach1`: 3 Vision + 1 Wave Alpha có sẵn trong giỏ mẫu | "Đặt hàng thành công. Mã đơn hàng: 22, tổng tiền 114.000.000 đ..."; `DON_HANG` trạng thái `CHO_XAC_NHAN`, 2 dòng; tồn Vision 24 -> 21, Wave Alpha 29 -> 28; giỏ trống | Đạt |
+| DH-03 | Hai khách cùng đặt chiếc xe cuối | `khach2`, `khach3` mỗi người 2 chiếc Monster (còn 2), bấm "Đặt hàng" cùng lúc | Một người đặt được; người kia: "Xe "Ducati Monster" chỉ còn 0 chiếc, không đủ số lượng yêu cầu (2).", giỏ còn nguyên; tồn kho 0 | Đạt |
+| DH-04 | Xác nhận đơn đặt trên web bằng procedure | `EXEC sp_XacNhanDonHang 22`, rồi chạy lại lần 2 | Đơn `DA_XAC_NHAN`, có hóa đơn 2 dòng; tồn kho **không đổi** (không trừ lần hai); lần 2 báo "Đơn hàng không ở trạng thái chờ xác nhận." | Đạt |
+| GD-03 | Trang cho khách trên điện thoại | iPhone 13: danh sách xe, giỏ hàng | Không cuộn ngang; không có lỗi JavaScript | Đạt |
+
+### 6.2 Bảng kiểm thử giao diện của thành viên 2 (GD01-GD18)
+
+Bảng nộp kèm phần giao diện (`Bang_KiemThu_GiaoDien.csv`, cột "Thực tế" còn trống), chạy trên bản đã ghép với dữ liệu của script.
+GD13 ban đầu mong đợi "xóa khỏi session"; giỏ hàng nay lưu trong CSDL nên kiểm tra trong bảng `CHI_TIET_GIO_HANG`.
+
+| Mã | Chức năng | Cách thực hiện | Kết quả mong đợi | Thực tế | Trạng thái |
+|---|---|---|---|---|---|
+| GD01 | Trang chủ | `GET /` | Hiển thị xe thật từ CSDL | 6 xe mới nhất: Orla, Vento S, Imperiale 400, Classic 350, Trident 660, Monster | Đạt |
+| GD02 | Danh sách xe | `GET /xe-may` | Hiển thị xe từ CSDL | "Tìm thấy 20 mẫu xe", trang 1 có 9 xe (CSDL có 20 xe đang bán) | Đạt |
+| GD03 | Tìm theo tên | `/xe-may?q=Vision` | Chỉ hiện xe trùng tên | Chỉ có Vision | Đạt |
+| GD04 | Lọc giá | `/xe-may?giaTu=20000000&giaDen=50000000` | Xe trong khoảng giá | 5 xe, giá từ 22.000.000 đến 47.000.000 đ | Đạt |
+| GD05 | Còn hàng | `/xe-may?conHang=true` | Chỉ xe còn hàng | Cho Monster về 0 xe: còn 19 mẫu, Monster không xuất hiện | Đạt |
+| GD06 | Phân trang | `/xe-may?page=1` | Trang và tổng số bản ghi phù hợp | Trang 2: 9 xe, trang 3: 2 xe, tổng 20 | Đạt |
+| GD07 | Sắp xếp | `/xe-may?sapXep=gia-tang` | Giá tăng dần | 20 xe, từ 16.000.000 đến 400.000.000 đ, không có cặp nào ngược thứ tự | Đạt |
+| GD08 | Chi tiết | `/xe-may/1` | Tên, giá, tồn kho đúng CSDL | Wave Alpha, 18.000.000 đ, tồn 29, khớp CSDL | Đạt |
+| GD09 | Mã không tồn tại | `/xe-may/9999999` | 404, trang lỗi thân thiện | HTTP 404, trang "Thông báo lỗi" | Đạt |
+| GD10 | Hình ảnh | Xe có ảnh / chưa có ảnh | Đúng ảnh hoặc dòng "chưa có ảnh" | Gán tạm `HinhAnh` cho Orla: hiện ảnh; các xe khác hiện "Chưa có ảnh thực tế" | Đạt |
+| GD11 | Giỏ hàng khách | Đăng nhập `khach5`, thêm 2 Sirius từ trang xe | Có xe trong giỏ | Giỏ có 2 mẫu (1 xe của dữ liệu mẫu + Sirius) | Đạt |
+| GD12 | Số lượng trong giỏ | Tăng, giảm số lượng | Không vượt tồn, tổng tiền đúng | Trident 660 còn 3, sửa thành 4: "Không đủ số lượng tồn kho"; Sirius sửa thành 25: "Mỗi mẫu xe được chọn tối đa 20 chiếc"; sửa thành 3: tổng 118.000.000 đ, đúng bằng tính từ CSDL | Đạt |
+| GD13 | Xóa khỏi giỏ | Bấm Xóa | Xóa khỏi giỏ | Sirius mất khỏi trang và khỏi bảng `CHI_TIET_GIO_HANG` | Đạt |
+| GD14 | CSRF | `POST /gio-hang/them` không có CSRF | Bị chặn 403 | HTTP 403 | Đạt |
+| GD15 | Phân quyền | Chưa đăng nhập hoặc nhân viên `GET /gio-hang` | Chặn hoặc yêu cầu đăng nhập | Chưa đăng nhập: chuyển tới `/dang-nhap`; nhân viên: 403 | Đạt |
+| GD16 | Tồn kho | Thêm vào giỏ rồi kiểm tra SQL | Không trừ số lượng tồn | Tồn Sirius trước 24, sau khi thêm vào giỏ vẫn 24 (kho chỉ trừ khi đặt hàng) | Đạt |
+| GD17 | Hiển thị di động | Bề rộng 390 px | Không tràn ngang, menu hoạt động | Không tràn ngang ở `/`, `/xe-may`, `/xe-may/1`; nút menu mở được danh sách mục | Đạt |
+| GD18 | Hợp nhất | Ghép với phần quản lý xe và khách hàng | Không trùng Entity, bảng, URL | Dùng chung Entity `XeMay`, `HangXe`, `KhachHang`; URL khách tách khỏi `/quan-tri`; khởi động với `ddl-auto=validate` thành công | Đạt |
+
+### 6.3 Kịch bản chờ phần còn thiếu
+
+Chưa có chức năng; thành viên phụ trách làm xong thì chạy và điền kết quả:
 
 | Mã | Kịch bản | Kết quả mong đợi | Kết quả |
 |---|---|---|---|
-| DH-01 | Hai nhân viên cùng xác nhận hai đơn mua chiếc xe cuối cùng | Một đơn xác nhận được, đơn kia báo hết hàng; tồn kho 0 | Chờ tích hợp |
-| DH-02 | Xác nhận đơn gồm nhiều xe, một xe không đủ hàng | Không tạo hóa đơn, không trừ xe nào | Chờ tích hợp |
-| DH-03 | Hủy đơn đã xác nhận | Tồn kho được cộng lại đúng số xe | Chờ tích hợp |
-| DH-04 | Khách thêm xe đã ngừng kinh doanh vào giỏ | Báo không đặt được | Chờ tích hợp |
-| GD-03 | Trang chủ, danh sách xe, chi tiết xe trên điện thoại | Lưới 1 cột, ảnh 4:3, giá đỏ đậm | Chờ tích hợp |
+| DH-05 | Nhân viên hủy đơn chờ xác nhận | Tồn kho được cộng lại đúng số xe của đơn | Chờ tích hợp |
+| DH-06 | Hai nhân viên cùng xác nhận một đơn trên trang quản trị | Một người xác nhận được, người kia báo đơn không còn chờ xác nhận; chỉ có một hóa đơn | Chờ tích hợp |
+| HD-01 | Xem, in hóa đơn của đơn đã xác nhận | Đúng các dòng và tổng tiền của đơn | Chờ tích hợp |
+| DH-07 | Khách xem "Đơn hàng của tôi" | Chỉ thấy đơn của chính mình, đúng trạng thái | Chờ tích hợp |
