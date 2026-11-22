@@ -37,10 +37,10 @@ import java.util.TreeMap;
  * giao dịch khóa dòng của xe đó; giao dịch khác muốn khóa cùng dòng phải CHỜ đến khi giao dịch trước
  * commit hoặc rollback, rồi mới đọc được số tồn MỚI. Ba bước trên vì thế không bao giờ chạy xen kẽ nhau.
  *
- * <p><b>Cách dùng cho chức năng đặt hàng:</b> gọi {@link #xuatKho} hoặc {@link #xuatKhoNhieuXe} BÊN TRONG
- * phương thức {@code @Transactional} tạo (hoặc xác nhận) đơn hàng. Nếu hết hàng, {@link HetHangException} làm
- * cả giao dịch bị hủy, không có đơn hàng dở dang. Procedure {@code sp_XacNhanDonHang} trong script SQL dùng
- * cùng kiểu khóa ({@code UPDLOCK}) trên cùng dòng, nên hai cách trừ kho chạy song song vẫn an toàn.
+ * <p><b>Cách dùng cho chức năng đặt hàng:</b> {@code DatHangService} gọi {@link #xuatKhoNhieuXe} BÊN TRONG
+ * giao dịch tạo đơn hàng. Nếu hết hàng, {@link HetHangException} làm cả giao dịch bị hủy, không có đơn hàng
+ * dở dang. Kho bị trừ ngay lúc đặt, nên procedure {@code sp_XacNhanDonHang} trong script SQL không trừ kho nữa;
+ * hủy đơn thì trả hàng bằng {@link #nhapKho}.
  */
 @Service
 public class TonKhoService {
